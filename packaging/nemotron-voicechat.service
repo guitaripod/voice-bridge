@@ -1,0 +1,12 @@
+[Unit]
+Description=NemotronLabs VoiceChat 11B NIM on port 9000
+After=docker.service network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/docker rm -f nemotron-labs-voicechat
+ExecStart=/usr/bin/docker run --rm --name=nemotron-labs-voicechat --device nvidia.com/gpu=0 --shm-size=8GB -e NIM_HTTP_API_PORT=9000 -p 127.0.0.1:9000:9000 -v /mnt/nvme8tb/voicechat/model/nemotron-labs-voicechat_v1.0.0:/data/models --entrypoint /s2s/run_s2s_server.sh nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest
+ExecStop=/usr/bin/docker stop nemotron-labs-voicechat
+TimeoutStartSec=600
+TimeoutStopSec=60
+Restart=no

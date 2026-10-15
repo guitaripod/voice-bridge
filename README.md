@@ -60,6 +60,41 @@ input: `transcripts` sends every transcript error to the agent without the model
 - At a quiet moment after 90 s of audio or 4 person turns the session is swapped the same way. Microphone
   audio during the swap is kept for 2 s and replayed into the new session.
 
+## The voice model
+
+The gateway talks to NVIDIA's NemotronLabs VoiceChat 11B NIM, run by `packaging/nemotron-voicechat.service`
+(a systemd user unit around `docker run`, using CDI for the GPU because this Docker has no `nvidia`
+runtime). It publishes port 9000 on loopback only; the gateway is what listens on the tailnet.
+
+- It needs about 66 GB of VRAM on one GPU. Do not start it while another job holds the GPU: a vllm
+  container holding about 95 GB leaves no room, and the NIM will fail to load.
+- The image is `nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest` and the Triton model repository is
+  `/mnt/nvme8tb/voicechat/model/nemotron-labs-voicechat_v1.0.0`, mounted at `/data/models`.
+- The unit is not enabled. Start and stop it by hand:
+
+```
+systemctl --user start nemotron-voicechat
+systemctl --user stop nemotron-voicechat
+```
+
+- Loading takes up to 5 minutes. It is ready when this shows `"triton_status":"ready"`:
+
+```
+curl -s localhost:9000/v1/realtime/health
+```
+
+  Until then the gateway's `/health` says `engine: loading` (or `down` if the container is not running),
+  and a call is refused.
+
+Install the unit and the gateway:
+
+```
+cp packaging/nemotron-voicechat.service packaging/voice-bridge.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+swift build -c release && install -m755 .build/release/voice-bridge .build/release/voice-probe ~/.local/bin/
+systemctl --user enable --now voice-bridge
+```
+
 ## Install
 
 ```
