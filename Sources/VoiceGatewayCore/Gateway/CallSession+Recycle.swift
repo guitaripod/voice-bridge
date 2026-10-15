@@ -44,6 +44,9 @@ extension CallSession {
         userSpeaking = false
         audioCarry = Data()
         userTexts.removeAll()
+        stoppedAt.removeAll()
+        dispatchIntentDeadline = nil
+        turnDispatched = false
         loop.reset()
         runaway.reset()
         recycle.reset()

@@ -20,12 +20,14 @@ extension CallSession {
         case .speechStarted:
             userSpeaking = true
             responding = false
+            turnDispatched = false
             runaway.userSpoke()
             lastActivity = now
             setPhase(.hearing)
         case .speechStopped:
             userSpeaking = false
             recycle.turnEnded()
+            stoppedAt.append(now)
             lastActivity = now
             if phase == .hearing { setPhase(.listening) }
         case .userTranscriptDelta(let item, let delta):
@@ -75,10 +77,25 @@ extension CallSession {
 
     private func userCompleted(item: String, transcript: String) {
         userTexts.removeValue(forKey: item)
+        if !stoppedAt.isEmpty { stoppedAt.removeFirst() }
         let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        outbox.send(.user(id: userID(item), text: text, final: true))
-        buffer.append(text)
+        if !text.isEmpty {
+            outbox.send(.user(id: userID(item), text: text, final: true))
+            switch dispatchMode {
+            case .tool: buffer.append(text)
+            case .transcripts: dispatchTranscript(text)
+            }
+        }
+        flushIntentIfReady()
+    }
+
+    private func dispatchTranscript(_ text: String) {
+        guard text.split(whereSeparator: \.isWhitespace).count >= Self.minimumTranscriptWords else {
+            logger.debug("transcript too short to dispatch", metadata: ["text": "\(text)"])
+            return
+        }
+        sendDispatch(text)
+        turnDispatched = true
     }
 
     private func userID(_ item: String) -> String {
@@ -107,16 +124,59 @@ extension CallSession {
     private func answerTool(callID: String, name: String) {
         toolPending = true
         lastActivity = clock.now()
-        let outcome = ToolRouter.run(name: name, agent: agent, buffer: &buffer)
+        let outcome = ToolRouter.run(
+            name: name, agent: agent, buffer: &buffer, mode: dispatchMode,
+            transcriptPending: transcriptPending(at: lastActivity), turnDispatched: turnDispatched)
         for effect in outcome.effects {
             switch effect {
             case .dispatch(let id, let text):
-                dispatched[id] = text
-                outbox.send(.dispatch(id: id, text: text))
+                recordDispatch(id: id, text: text)
             case .stop:
                 outbox.send(.stop)
+            case .awaitTranscript:
+                dispatchIntentDeadline = lastActivity + limits.transcriptGraceSeconds
             }
         }
         nim?.answer(callID: callID, output: VoiceText.ascii(outcome.output))
+    }
+}
+
+extension CallSession {
+    static let minimumTranscriptWords = 3
+
+    /// A speech turn has ended and its transcript has not come, and has not been given up on.
+    func transcriptPending(at now: Double) -> Bool {
+        stoppedAt.contains { now - $0 < limits.transcriptGraceSeconds }
+    }
+
+    func sendDispatch(_ text: String) {
+        recordDispatch(id: UUID().uuidString, text: text)
+    }
+
+    func recordDispatch(id: String, text: String) {
+        dispatched[id] = text
+        outbox.send(.dispatch(id: id, text: text))
+    }
+
+    /// The model asked to send before the words arrived: send them the moment the last pending
+    /// transcript is in.
+    func flushIntentIfReady() {
+        guard dispatchIntentDeadline != nil, !transcriptPending(at: clock.now()) else { return }
+        settleIntent()
+    }
+
+    func expireIntent(at now: Double) {
+        stoppedAt.removeAll { now - $0 >= limits.transcriptGraceSeconds }
+        guard let deadline = dispatchIntentDeadline, now >= deadline else { return }
+        settleIntent()
+    }
+
+    private func settleIntent() {
+        dispatchIntentDeadline = nil
+        if let text = buffer.take() {
+            sendDispatch(text)
+        } else {
+            logger.info("send_to_agent was answered but no transcript arrived in time")
+        }
     }
 }

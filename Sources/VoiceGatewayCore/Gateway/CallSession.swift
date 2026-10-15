@@ -7,6 +7,7 @@ import VoiceKit
 actor CallSession {
     let limits: GatewayLimits
     let nimURL: String
+    let dispatchMode: DispatchMode
     let connector: any NIMConnector
     let clock: any VoiceClock
     let outbox: ClientOutbox
@@ -34,6 +35,9 @@ actor CallSession {
     var replay: ReplayBuffer
     var faults: FaultBudget
 
+    var stoppedAt: [Double] = []
+    var dispatchIntentDeadline: Double?
+    var turnDispatched = false
     var userSpeaking = false
     var responding = false
     var toolPending = false
@@ -46,10 +50,11 @@ actor CallSession {
     private let finishedSignal: AsyncStream<Void>.Continuation
 
     init(
-        nimURL: String, connector: any NIMConnector, clock: any VoiceClock, limits: GatewayLimits,
+        nimURL: String, dispatchMode: DispatchMode = .tool, connector: any NIMConnector, clock: any VoiceClock, limits: GatewayLimits,
         outbox: ClientOutbox, logger: Logger
     ) {
         self.nimURL = nimURL
+        self.dispatchMode = dispatchMode
         self.connector = connector
         self.clock = clock
         self.limits = limits

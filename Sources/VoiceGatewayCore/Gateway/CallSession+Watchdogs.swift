@@ -11,6 +11,7 @@ extension CallSession {
             return
         }
         guard !swapping, !terminal else { return }
+        expireIntent(at: now)
         if awaitingNIM, now - lastNIMEvent >= limits.engineSilenceSeconds {
             logger.warning("nim silent while a reply was due")
             fault(.engineError)

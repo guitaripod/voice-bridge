@@ -24,7 +24,7 @@ extension CallSession {
         case .sent(let id): dispatched.removeValue(forKey: id)
         case .refused(let id, let reason):
             logger.info("dispatch refused", metadata: ["reason": "\(reason)"])
-            if let text = dispatched.removeValue(forKey: id) { buffer.requeue(text) }
+            if let text = dispatched.removeValue(forKey: id), dispatchMode == .tool { buffer.requeue(text) }
         case .bye: await finish()
         case .hello, .unknown: break
         }

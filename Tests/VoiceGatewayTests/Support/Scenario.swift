@@ -30,6 +30,16 @@ extension FakeNIMSession {
         return answer?.item?["output"]?.string
     }
 
+    func personStops(item: String) async {
+        await emit(.speechStarted)
+        await emit(.userDelta(itemID: item, delta: "..."))
+        await emit(.speechStopped)
+    }
+
+    func transcriptArrives(_ text: String, item: String) async {
+        await emit(.userCompleted(itemID: item, transcript: text))
+    }
+
     func speak(seconds: Double) async {
         let chunk = Data(count: PCM.bytes(seconds: seconds))
         await emit(.audio(chunk))

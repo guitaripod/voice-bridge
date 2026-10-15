@@ -43,24 +43,28 @@ public final class Gateway: Sendable {
         active.withLock { $0 = max(0, $0 - 1) }
     }
 
+    private func describe(_ detail: String) -> String {
+        "\(detail) Dispatch: \(config.dispatch.rawValue)."
+    }
+
     public func health() async -> VoiceHealth {
         let held = calls
         if held > 0 {
             return VoiceHealth(
                 gateway: GatewayInfo.version, engine: .busy, model: GatewayInfo.modelName, calls: held,
-                detail: "A call is in progress.")
+                detail: describe("A call is in progress."))
         }
         switch await monitor.current() {
         case .ready:
             return VoiceHealth(
                 gateway: GatewayInfo.version, engine: .ready, model: GatewayInfo.modelName, calls: 0,
-                detail: "Ready for a call.")
+                detail: describe("Ready for a call."))
         case .loading(let detail):
             return VoiceHealth(
-                gateway: GatewayInfo.version, engine: .loading, model: GatewayInfo.modelName, calls: 0, detail: detail)
+                gateway: GatewayInfo.version, engine: .loading, model: GatewayInfo.modelName, calls: 0, detail: describe(detail))
         case .down(let detail):
             return VoiceHealth(
-                gateway: GatewayInfo.version, engine: .down, model: GatewayInfo.modelName, calls: 0, detail: detail)
+                gateway: GatewayInfo.version, engine: .down, model: GatewayInfo.modelName, calls: 0, detail: describe(detail))
         }
     }
 }

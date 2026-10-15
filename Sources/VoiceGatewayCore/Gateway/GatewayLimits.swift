@@ -18,6 +18,7 @@ public struct GatewayLimits: Sendable, Equatable {
     public var nimConnectTimeoutSeconds: Double
     public var tickSeconds: Double
     public var healthCacheSeconds: Double
+    public var transcriptGraceSeconds: Double
 
     public static let contract = GatewayLimits(
         runawaySpeechSeconds: 25,
@@ -35,7 +36,8 @@ public struct GatewayLimits: Sendable, Equatable {
         faultWindowSeconds: 60,
         nimConnectTimeoutSeconds: 5,
         tickSeconds: 0.1,
-        healthCacheSeconds: 2)
+        healthCacheSeconds: 2,
+        transcriptGraceSeconds: 3)
 }
 
 /// PCM16 mono at the wire's sample rate.

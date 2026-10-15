@@ -56,7 +56,7 @@ extension Gateway {
         defer { release() }
         logger.info("call", metadata: ["client": "\(hello.client.rawValue)", "app": "\(hello.app)"])
         let session = CallSession(
-            nimURL: config.nimURL, connector: connector, clock: clock, limits: limits, outbox: outbox, logger: logger)
+            nimURL: config.nimURL, dispatchMode: config.dispatch, connector: connector, clock: clock, limits: limits, outbox: outbox, logger: logger)
         guard await session.open() else { return }
         await session.begin()
         await withTaskGroup(of: Void.self) { group in

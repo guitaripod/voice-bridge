@@ -16,6 +16,7 @@ Without tailscale it listens on loopback only and says so. It never binds `0.0.0
 | `VOICE_PORT` | `4102` | listen port |
 | `VOICE_NIM_URL` | `ws://127.0.0.1:9000/v1/realtime` | the NIM's realtime socket |
 | `VOICE_PASSWORD` | unset | when set, `Authorization: Bearer <password>` is required on `/call` and `/health` |
+| `VOICE_DISPATCH` | `tool` | `tool` or `transcripts`, see Dispatch modes; shown in the `/health` detail |
 | `VOICE_LOG_LEVEL` | `info` | swift-log level |
 
 ## Health
@@ -23,6 +24,27 @@ Without tailscale it listens on loopback only and says so. It never binds `0.0.0
 `GET /health` answers `VoiceHealth`: `engine` is `ready`, `loading`, `down` or `busy`. `ready` means the
 NIM's `GET /v1/realtime/health` says `"triton_status":"ready"`, `loading` is its 503, `down` is no
 answer, and `busy` is a held call. The probe is cached for 2 seconds.
+
+## Dispatch modes
+
+How the person's words reach the agent is a switch, because the model's tool arguments and its habit of
+calling `send_to_agent` are unreliable. The text sent is always the model's own transcript of the speech.
+
+- `tool` (default): the final transcripts since the last dispatch are kept, and when the model calls
+  `send_to_agent` they are joined (at most 4000 characters) and sent as one `dispatch`; the tool answers
+  `Sent.`, or `Nothing to send.` when there is nothing. If the model calls it after a speech turn has
+  ended but before that turn's transcript has arrived, the tool still answers `Sent.` at once and the
+  `dispatch` goes out the moment the transcript completes, joined with anything pending. Without a
+  transcript within 3 s the intent is dropped and logged. If the model never calls the tool, nothing is sent.
+- `transcripts`: every final transcript of at least 3 words (after trimming) is dispatched as soon as it
+  completes, whatever the model does. `send_to_agent` only answers `Sent.`, or `Already sent.` when the
+  current turn was dispatched already. Shorter transcripts are shown to the client but not sent.
+
+What decides between them is the gate rule in `iOS/Tailscode/docs/voice-call.md`: `send_to_agent` must be
+called on at least 95% of 50 scripted task utterances. `voice-probe run --json` reports
+`summary.sendToAgentRate` over the scripted utterances. At 95% or better keep `tool`; below that, use
+`transcripts`. The same run's `userTranscript` against what was said (word error rate) is the other
+input: `transcripts` sends every transcript error to the agent without the model's judgement in between.
 
 ## Call behaviour worth knowing
 
