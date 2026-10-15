@@ -1,0 +1,14 @@
+[Unit]
+Description=voice-bridge, the gateway between Tailscode calls and the NemotronLabs VoiceChat NIM
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/voice-bridge
+EnvironmentFile=-%h/.config/voice-bridge.env
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
