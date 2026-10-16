@@ -1,5 +1,5 @@
 [Unit]
-Description=NemotronLabs VoiceChat 11B NIM on port 9000
+Description=NemotronLabs VoiceChat 11B NIM on port 9000 (optional, only for VOICE_ENGINE=external)
 After=docker.service network-online.target
 
 [Service]
