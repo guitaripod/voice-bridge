@@ -52,7 +52,7 @@ struct ImagePullJobTests {
         let job = try await harness.jobs.start(fix: "voice.pullImage")
         let done = await harness.settle(job)
         #expect(done?.failure == "noDisk")
-        #expect(done?.facts["needMB"] == "22500")
+        #expect(done?.facts["needMB"] == "21458")
         #expect(done?.facts["freeMB"] == "10000")
         #expect(!FileManager.default.fileExists(atPath: harness.bin.url.appendingPathComponent("docker.pull").path))
     }

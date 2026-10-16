@@ -36,7 +36,7 @@ struct ModelDownloadJob: Sendable {
 
     private func diskFailure(remaining: Int64) async -> JobFailure? {
         guard let free = await DiskSpace.freeMB(at: directory, runner: environment.runner) else { return nil }
-        let need = Int(remaining / 1_000_000)
+        let need = VoiceRequirements.megabytes(remaining)
         return free < need ? .noDisk(needMB: need, freeMB: free) : nil
     }
 
@@ -53,7 +53,7 @@ struct ModelDownloadJob: Sendable {
         guard result.launched else { return .other("ngcNotLaunched", tail: [result.error]) }
         var failure = JobFailure(id: FailureClassifier.classify(tail.lines), facts: JobFailure.tailFacts(tail.lines))
         if failure.id == JobFailure.noDisk, let free = await DiskSpace.freeMB(at: directory, runner: environment.runner) {
-            failure.facts.merge(["needMB": "\(VoiceRequirements.modelBytes / 1_000_000)", "freeMB": "\(free)"]) { _, new in new }
+            failure.facts.merge(["needMB": "\(VoiceRequirements.megabytes(VoiceRequirements.modelBytes))", "freeMB": "\(free)"]) { _, new in new }
         }
         return failure
     }

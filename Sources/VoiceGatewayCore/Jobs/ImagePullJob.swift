@@ -29,14 +29,14 @@ struct ImagePullJob: Sendable {
         guard result.launched else { return .failed(.other("dockerNotLaunched", tail: [result.error])) }
         var failure = JobFailure(id: FailureClassifier.classify(tail.lines), facts: JobFailure.tailFacts(tail.lines))
         if failure.id == JobFailure.noDisk, let free = await dockerFreeMB() {
-            failure.facts.merge(["needMB": "\(VoiceRequirements.imageBytes / 1_000_000)", "freeMB": "\(free)"]) { _, new in new }
+            failure.facts.merge(["needMB": "\(VoiceRequirements.megabytes(VoiceRequirements.imageBytes))", "freeMB": "\(free)"]) { _, new in new }
         }
         return .failed(failure)
     }
 
     private func diskFailure() async -> JobFailure? {
         guard let free = await dockerFreeMB() else { return nil }
-        let need = Int(VoiceRequirements.imageBytes / 1_000_000)
+        let need = VoiceRequirements.megabytes(VoiceRequirements.imageBytes)
         return free < need ? .noDisk(needMB: need, freeMB: free) : nil
     }
 

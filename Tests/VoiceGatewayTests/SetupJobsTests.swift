@@ -68,7 +68,7 @@ struct SetupJobsTests {
         let done = await harness.settle(job)
         #expect(done?.state == .failed)
         #expect(done?.failure == "noDisk")
-        #expect(done?.facts["needMB"] == "46868")
+        #expect(done?.facts["needMB"] == "44697")
         #expect(done?.facts["freeMB"] == "9000")
         #expect(harness.ngcArgs == nil)
     }
@@ -105,7 +105,7 @@ struct SetupJobsTests {
         let done = await harness.settle(job)
         #expect(done?.failure == "noDisk")
         #expect(done?.facts["freeMB"] == "500000")
-        #expect(done?.facts["needMB"] == "46868")
+        #expect(done?.facts["needMB"] == "44697")
     }
 
     @Test func cancelKillsTheProcessGroupKeepsPartialFilesAndTheNextRunResumes() async throws {

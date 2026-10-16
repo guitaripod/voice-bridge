@@ -19,6 +19,11 @@ public enum VoiceRequirements {
     public static let typicalLoadSeconds = 240.0
     public static let loadTimeoutSeconds = 480.0
 
+    /// Free space is counted in mebibytes, the unit `df` and `nvidia-smi` report, rounded up.
+    public static func megabytes(_ bytes: Int64) -> Int {
+        Int((bytes + 1_048_575) / 1_048_576)
+    }
+
     public static let capability = "voice"
     public static let downloadModelFix = "voice.downloadModel"
     public static let pullImageFix = "voice.pullImage"
