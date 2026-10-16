@@ -357,7 +357,7 @@ check "bad checksum: with a toolchain the source build is what runs" grep -q "cl
 expect_has "$OUT" "cloning https://github.com/guitaripod/voice-bridge into $SHARE/src/voice-bridge" "bad checksum: and it clones the repo"
 
 fresh_home
-shim git 'echo "$*" >>"'"$TMP"'/git.log"; if [ "$1" = clone ]; then mkdir -p "$3"; fi; exit 0'
+shim git 'echo "$*" >>"'"$TMP"'/git.log"; if [ "$1" = clone ]; then mkdir -p "$4"; fi; exit 0'
 shim swift 'exit 0'
 rm -f "$TMP/git.log"
 BASE="$SERVER/badsum" ENV_EXTRA="VOICE_KIT_REPO=https://example.test/kit" install --no-service
