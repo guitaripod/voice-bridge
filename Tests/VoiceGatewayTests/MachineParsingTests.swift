@@ -34,8 +34,8 @@ struct MachineParsingTests {
             1845, /usr/bin/kwin_wayland, 367
             3706, /opt/1Password/1password --type=gpu-process --ozone-platform=wayland --flag=a,b,c, 38
             3827043, .venv/bin/python, 18156
-            3843796, /home/marcus/llama.cpp/build/bin/llama-server, 5350
-            3856376, /home/marcus/llama.cpp/build/bin/llama-server, 30566
+            3843796, /home/user/llama.cpp/build/bin/llama-server, 5350
+            3856376, /home/user/llama.cpp/build/bin/llama-server, 30566
             not a line
             """
         let holders = NvidiaSMI.parseHolders(output)
