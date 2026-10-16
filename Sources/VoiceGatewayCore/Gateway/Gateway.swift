@@ -11,13 +11,14 @@ public final class Gateway: Sendable {
     let connector: any NIMConnector
     let clock: any VoiceClock
     let monitor: NIMHealthMonitor
+    let machine: MachineServices?
     let logger: Logger
     private let active = Mutex(0)
 
     public init(
         config: GatewayConfig, limits: GatewayLimits = .contract,
         connector: any NIMConnector = WebSocketNIMConnector(),
-        probe: (any NIMHealthProbe)? = nil, clock: any VoiceClock = SystemVoiceClock(),
+        probe: (any NIMHealthProbe)? = nil, machine: MachineServices? = nil, clock: any VoiceClock = SystemVoiceClock(),
         logger: Logger = Logger(label: "voice-bridge")
     ) {
         self.config = config
@@ -25,6 +26,7 @@ public final class Gateway: Sendable {
         self.connector = connector
         self.clock = clock
         self.logger = logger
+        self.machine = machine
         monitor = NIMHealthMonitor(
             probe: probe ?? HTTPNIMHealthProbe(nimURL: config.nimURL), clock: clock, ttl: limits.healthCacheSeconds)
     }
@@ -41,9 +43,10 @@ public final class Gateway: Sendable {
 
     func release() {
         active.withLock { $0 = max(0, $0 - 1) }
+        machine?.activity.callEnded(at: clock.now())
     }
 
-    private func describe(_ detail: String) -> String {
+    func describe(_ detail: String) -> String {
         "\(detail) Dispatch: \(config.dispatch.rawValue)."
     }
 
@@ -54,6 +57,7 @@ public final class Gateway: Sendable {
                 gateway: GatewayInfo.version, engine: .busy, model: GatewayInfo.modelName, calls: held,
                 detail: describe("A call is in progress."))
         }
+        if let machine, let mapped = await machineHealth(machine) { return mapped }
         switch await monitor.current() {
         case .ready:
             return VoiceHealth(

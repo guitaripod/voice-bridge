@@ -19,6 +19,8 @@ public struct GatewayLimits: Sendable, Equatable {
     public var tickSeconds: Double
     public var healthCacheSeconds: Double
     public var transcriptGraceSeconds: Double
+    public var engineFrameSeconds: Double = 2
+    public var engineWatchSeconds: Double = 0.25
 
     public static let contract = GatewayLimits(
         runawaySpeechSeconds: 25,

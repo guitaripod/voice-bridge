@@ -9,7 +9,9 @@ var logger = Logger(label: "voice-bridge")
 logger.logLevel = config.logLevel
 
 let plan = BindPlan.make(tailscaleOutput: TailscaleAddress.resolve())
-let gateway = Gateway(config: config, logger: logger)
+let clock = SystemVoiceClock()
+let machine = MachineServices.live(config: config, environment: ProcessInfo.processInfo.environment, clock: clock, logger: logger)
+let gateway = Gateway(config: config, machine: machine, clock: clock, logger: logger)
 
 do {
     try await GatewayServer.run(gateway: gateway, plan: plan)

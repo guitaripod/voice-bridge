@@ -7,6 +7,7 @@ extension Gateway {
     /// Serves one `/call` socket: handshake, the one-call-at-a-time rule, then the call itself.
     func serveCall(inbound: WebSocketInboundStream, outbound: WebSocketOutboundWriter) async {
         let outbox = ClientOutbox()
+        let presence = ClientPresence()
         let (frames, framesIn) = AsyncStream.makeStream(of: ClientFrame.self)
         let writer = Task {
             await outbox.run { frame in
@@ -27,10 +28,11 @@ extension Gateway {
             } catch {
                 logger.debug("client socket ended", metadata: ["error": "\(error)"])
             }
+            presence.leave()
             framesIn.finish()
         }
         await withTaskCancellationHandler {
-            await call(frames: FrameReader(frames), outbox: outbox)
+            await call(frames: FrameReader(frames), outbox: outbox, presence: presence)
         } onCancel: {
             socketReader.cancel()
             outbox.finish()
@@ -40,7 +42,7 @@ extension Gateway {
         socketReader.cancel()
     }
 
-    private func call(frames: FrameReader, outbox: ClientOutbox) async {
+    private func call(frames: FrameReader, outbox: ClientOutbox, presence: ClientPresence) async {
         guard let hello = await readHello(frames, outbox: outbox) else { return }
         guard hello.v == VoiceWire.version else {
             outbox.send(
@@ -53,8 +55,10 @@ extension Gateway {
             outbox.send(.error(code: "busy", message: "A call is already in progress."))
             return
         }
+        machine?.activity.callBegan(at: clock.now())
         defer { release() }
         logger.info("call", metadata: ["client": "\(hello.client.rawValue)", "app": "\(hello.app)"])
+        guard await awaitEngine(outbox: outbox, presence: presence) else { return }
         let session = CallSession(
             nimURL: config.nimURL, dispatchMode: config.dispatch, connector: connector, clock: clock, limits: limits, outbox: outbox, logger: logger)
         guard await session.open() else { return }

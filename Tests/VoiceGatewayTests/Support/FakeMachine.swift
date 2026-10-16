@@ -21,6 +21,7 @@ struct FakeMachine: Sendable {
     var cdiDevices = true
     var imageBytes: Int64? = 22_543_587_937
     var container: String?
+    var otherContainers = ["open-webui", "\(VoiceRequirements.containerName)-old"]
     var freeDiskMB = 500_000
     var model = ModelShape.complete
 
@@ -63,8 +64,9 @@ struct FakeMachine: Sendable {
             guard let imageBytes else { return CommandResult(status: 1, error: "Error: No such image") }
             return CommandResult(output: "\(imageBytes)\n")
         case "ps":
-            guard let container else { return CommandResult(output: "open-webui|running|Up 18 hours\n") }
-            return CommandResult(output: "open-webui|running|Up 18 hours\n\(VoiceRequirements.containerName)|\(container)|Up 3 minutes\n")
+            var lines = otherContainers.map { "\($0)|running|Up 18 hours" }
+            if let container { lines.append("\(VoiceRequirements.containerName)|\(container)|Up 3 minutes") }
+            return CommandResult(output: lines.joined(separator: "\n") + "\n")
         default: return nil
         }
     }
