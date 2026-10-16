@@ -12,9 +12,16 @@ struct ModelStatus: Sendable, Equatable {
 enum ModelDirectory {
     static let completeFraction = 0.99
 
+    /// Looks at the directory itself and at the folder NGC makes inside it, and answers for the one that
+    /// holds a complete model, or else the one with more of it.
     static func inspect(_ directory: URL, fileManager: FileManager = .default) -> ModelStatus {
         let nested = directory.appendingPathComponent(VoiceRequirements.modelFolder, isDirectory: true)
-        let root = [directory, nested].first { hasTriton($0, fileManager) } ?? (isDirectory(nested, fileManager) ? nested : directory)
+        let candidates = [directory, nested].filter { hasTriton($0, fileManager) }.map { status(of: $0, fileManager) }
+        if let best = candidates.first(where: \.valid) ?? candidates.max(by: { $0.bytes < $1.bytes }) { return best }
+        return status(of: isDirectory(nested, fileManager) ? nested : directory, fileManager)
+    }
+
+    private static func status(of root: URL, _ fileManager: FileManager) -> ModelStatus {
         let bytes = size(of: root, fileManager)
         let triton = root.appendingPathComponent(VoiceRequirements.tritonModel, isDirectory: true)
         let config = fileManager.fileExists(atPath: triton.appendingPathComponent("config.pbtxt").path)
