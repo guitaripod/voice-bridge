@@ -4,7 +4,7 @@ import HummingbirdWebSocket
 import NIOCore
 import VoiceKit
 
-/// The HTTP and WebSocket surface: `GET /health`, `ws /call` and the `/setup` routes, all behind the bearer password.
+/// The HTTP and WebSocket surface: `GET /health`, `GET /update`, `ws /call` and the `/setup` routes, all behind the bearer password.
 public enum GatewayApp {
     public static func make(
         gateway: Gateway, host: String, port: Int,
@@ -15,6 +15,9 @@ public enum GatewayApp {
         router.get(RouterPath(VoiceWire.healthPath)) { _, _ -> Response in
             let health = await gateway.health()
             return try jsonResponse(health)
+        }
+        router.get(RouterPath(UpdateWire.path)) { _, _ -> Response in
+            try jsonResponse(await gateway.updates.info())
         }
         if let machine = gateway.machine { SetupRoutes.add(to: router, services: machine) }
 

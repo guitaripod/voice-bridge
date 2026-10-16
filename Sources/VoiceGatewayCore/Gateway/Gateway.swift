@@ -12,6 +12,7 @@ public final class Gateway: Sendable {
     let clock: any VoiceClock
     let monitor: NIMHealthMonitor
     let machine: MachineServices?
+    let updates: UpdateChecker
     let logger: Logger
     private let active = Mutex(0)
 
@@ -19,7 +20,7 @@ public final class Gateway: Sendable {
         config: GatewayConfig, limits: GatewayLimits = .contract,
         connector: any NIMConnector = WebSocketNIMConnector(),
         probe: (any NIMHealthProbe)? = nil, machine: MachineServices? = nil, clock: any VoiceClock = SystemVoiceClock(),
-        logger: Logger = Logger(label: "voice-bridge")
+        releases: ReleaseList.Fetch? = nil, logger: Logger = Logger(label: "voice-bridge")
     ) {
         self.config = config
         self.limits = limits
@@ -27,6 +28,7 @@ public final class Gateway: Sendable {
         self.clock = clock
         self.logger = logger
         self.machine = machine
+        updates = UpdateChecker(clock: clock, fetch: releases ?? ReleaseList.fetcher(base: config.releaseBase))
         monitor = NIMHealthMonitor(
             probe: probe ?? HTTPNIMHealthProbe(nimURL: config.nimURL), clock: clock, ttl: limits.healthCacheSeconds)
     }

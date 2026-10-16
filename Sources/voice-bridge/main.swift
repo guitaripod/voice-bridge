@@ -4,6 +4,15 @@ import VoiceGatewayCore
 
 signal(SIGPIPE, SIG_IGN)
 
+let command = GatewayCommand.parse(Array(CommandLine.arguments.dropFirst()))
+if command != .serve {
+    let status = await GatewayCLI.run(
+        command, environment: ProcessInfo.processInfo.environment,
+        out: { FileHandle.standardOutput.write(Data($0.utf8)) },
+        err: { FileHandle.standardError.write(Data($0.utf8)) })
+    exit(status)
+}
+
 let config = GatewayConfig(environment: ProcessInfo.processInfo.environment)
 var logger = Logger(label: "voice-bridge")
 logger.logLevel = config.logLevel
