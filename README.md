@@ -9,6 +9,80 @@ the model for runaway, loops, engine errors and silent clients. The contract is
 It listens on `127.0.0.1` and on this machine's tailnet IPv4 (`tailscale ip -4`, read once at start).
 Without tailscale it listens on loopback only and says so. It never binds `0.0.0.0`.
 
+## Install
+
+On a Linux computer with an NVIDIA GPU that has 80 GB of memory, one command:
+
+```
+curl -fsSL https://raw.githubusercontent.com/guitaripod/voice-bridge/master/install.sh | bash
+```
+
+It needs neither Swift nor git. In order, it:
+
+1. Checks Tailscale (the gateway listens on this computer and on its tailnet address, which it reads once when
+   it starts) and says what to do when it is down.
+2. Downloads the prebuilt program for this machine (Linux x86_64 or aarch64) and checks its SHA-256.
+3. Asks that program whether this machine can run voice calls (`voice-bridge doctor`). A machine that cannot gets
+   that answer and nothing is installed; `--force` installs the gateway anyway.
+4. Installs the program in `~/.local/share/voice-bridge/bin`, links it from `~/.local/bin/voice-bridge`, keeps the
+   installer next to it for `voice-bridge update`, writes `~/.config/voice-bridge.env` only when there is none,
+   and installs and starts the `voice-bridge` user service. It also copies `nemotron-voicechat.service`, which it
+   never enables.
+5. Runs `voice-bridge doctor` again and ends with what is left: the one administrator command when Docker or the
+   GPU for containers is missing, then "Open Tailscode, pick this server and tap Set up voice", which downloads the
+   model (47 GB) and the engine image (23 GB) from the app.
+
+It never restarts a gateway that is already running. Options: `--no-service` installs everything except the
+service, `--from-source` builds instead of downloading, `--update` replaces the program and touches nothing else.
+Without a prebuilt program for the machine, a failed download or a checksum that does not match, it builds from
+source and says why in one sentence; that needs Swift and git, and clones this repo and `CodingAgentKit` side by
+side under `~/.local/share/voice-bridge/src` (the package depends on `../CodingAgentKit`). A Mac has no NVIDIA GPU:
+the installer says so and stops.
+
+Its settings are `VOICE_RELEASE_BASE` (where `latest.txt` and the archives are, default this repo's latest
+release), `VOICE_SHARE_DIR`, `VOICE_ENV_FILE`, `VOICE_UNIT`, `VOICE_SRC`, `VOICE_KIT_REPO`, `VOICE_TAILSCALE`
+and `VOICE_FORCE_SERVICE` (rewrite an existing unit).
+
+### Commands
+
+```
+voice-bridge                    serve (what the service runs)
+voice-bridge --version          voice-bridge 0.2.0
+voice-bridge doctor [--json]    check this machine for voice calls
+voice-bridge doctor --commands  only the commands that need administrator rights, one per line
+voice-bridge update             install the newest release and restart when it is safe
+```
+
+A word it does not know is refused with exit 2 instead of starting a second server. `doctor` reads the same checks
+the gateway serves on `GET /setup`, from this machine, without a running gateway, and starts no job. It prints
+the hardware verdict first ("This machine has an NVIDIA RTX PRO 6000 Blackwell Workstation Edition with 96 GB:
+voice calls can run here." or "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine."), then one line
+per check with a mark, the command to run or the note that Tailscode does the step. It exits 3 when the machine
+cannot run voice calls, 0 otherwise; `--json` prints the `SetupReport`. It reads `~/.config/voice-bridge.env` under
+the real environment, so it judges the machine the way the service sees it. A download the gateway is running
+right now shows as "not downloaded yet" there: ask the gateway (`GET /setup`) for jobs.
+
+### Updating
+
+`GET /update` answers `{"current": "0.2.0", "latest": "0.2.1", "behind": true}` from `$VOICE_RELEASE_BASE/latest.txt`,
+read at most every 6 hours (10 minutes after a failure). Offline, it keeps answering with the last version it saw, or
+`"latest": null, "behind": false` when it never saw one. It is behind the same bearer password as `/health`.
+
+`voice-bridge update` runs the staged installer (`~/.local/share/voice-bridge/install.sh`) in `--update` mode, which
+replaces the program on disk and nothing else, then restarts `voice-bridge.service` only when the running gateway
+says it has nothing to lose: `/health` reports no call and an engine that is not loading, and `/setup` reports no
+open job and no step working. Otherwise it installs, says why it did not restart (exit 4), and the next run only
+restarts. A gateway it cannot ask (wrong password in the env file) is treated as busy. There is a window of a few
+milliseconds between the question and the restart in which a call could begin.
+
+### Releasing
+
+Add a numbered heading to the top of `CHANGELOG.md` and set `GatewayInfo.version` to the same number (a test
+fails when they differ), tag it with the bare number (`0.2.1`, no `v`) and push the tag. `.github/workflows/release.yml`
+builds `scripts/package-release.sh` on a `swift:6.4.1-jammy` container for x86_64 and aarch64 (jammy's glibc 2.35 is
+the oldest worth supporting) and publishes `voice-bridge-<version>-linux-<arch>.tar.gz`, its `.sha256` and
+`latest.txt`. There is no macOS asset.
+
 ## Environment
 
 | variable | default | |
@@ -21,6 +95,7 @@ Without tailscale it listens on loopback only and says so. It never binds `0.0.0
 | `VOICE_ENGINE` | `auto` | `managed`, `external` or `auto`, see Managed and external engines |
 | `VOICE_IDLE_STOP_MINUTES` | `10` | minutes without a call or a setup job before the gateway stops its engine; `0` never stops it |
 | `VOICE_MODEL_DIR` | `~/.local/share/voice-bridge/model` | where the model is downloaded and looked for |
+| `VOICE_RELEASE_BASE` | this repo's latest release | where `GET /update` and `voice-bridge update` read `latest.txt`; see Install |
 | `NGC_API_KEY` | unset | passed to the NGC CLI as `NGC_CLI_API_KEY` for the model download |
 
 ## Health
@@ -194,18 +269,12 @@ exact text of its authentication errors (used to tell `denied` from `network`), 
 under the containerd image store (used for layer counting; without layer lines the job still runs, with no
 fraction). A card whose `nvidia-smi` reports no memory size (unified memory) is reported unavailable.
 
-## Install
+## Packaging
 
-```
-swift build -c release && install -m755 .build/release/voice-bridge .build/release/voice-probe ~/.local/bin/
-cp packaging/voice-bridge.service ~/.config/systemd/user/
-```
-
-Put `VOICE_*` settings (and `NGC_API_KEY`) in `~/.config/voice-bridge.env`, then enable the unit with
-`systemctl --user`. The user running it must be able to use Docker (`docker version` works) and see `nvidia-smi`.
-
-`packaging/nemotron-voicechat.service` is only for `VOICE_ENGINE=external`: it keeps the container running
-all the time, which is what the managed engine replaces.
+`packaging/voice-bridge.service` is the user unit the installer writes, and `packaging/nemotron-voicechat.service`
+is only for `VOICE_ENGINE=external`: it keeps the container running all the time, which is what the managed
+engine replaces. The installer copies it and never enables it; `scripts/test-install.sh` checks both against
+the files here.
 
 ## voice-probe
 
@@ -231,6 +300,12 @@ always present and absent measurements are `null`.
 a tool call and a tone, for trying the probe or a client without a GPU.
 
 ## Tests
+
+`scripts/test-install.sh` installs from a fake release served by `python3 -m http.server` into a throwaway `HOME`,
+with a `PATH` that holds no `swift`, no `git` and no service manager, and fake `nvidia-smi`, `docker`, `tailscale`,
+`systemctl` and `loginctl`. It covers the binary install, an env file that is already there, a failed checksum,
+a machine without a GPU, `--no-service`, `--force`, re-running, `--update`, and, when `.build/debug` is current, the
+real program's own `doctor` through the installer. It never touches the real `~/.local`, `~/.config` or a service.
 
 `swift test`. Everything runs on loopback against a scripted fake NIM; no GPU, docker, network or display. The
 machine is faked two ways: a scripted `CommandRunner` that answers `docker`, `nvidia-smi` and the rest from a
