@@ -8,6 +8,7 @@ actor CallSession {
     let limits: GatewayLimits
     let nimURL: String
     let dispatchMode: DispatchMode
+    let speech: SpeechMode
     let connector: any NIMConnector
     let clock: any VoiceClock
     let outbox: ClientOutbox
@@ -50,11 +51,12 @@ actor CallSession {
     private let finishedSignal: AsyncStream<Void>.Continuation
 
     init(
-        nimURL: String, dispatchMode: DispatchMode = .tool, connector: any NIMConnector, clock: any VoiceClock, limits: GatewayLimits,
+        nimURL: String, dispatchMode: DispatchMode = .tool, speech: SpeechMode = .model, connector: any NIMConnector, clock: any VoiceClock, limits: GatewayLimits,
         outbox: ClientOutbox, logger: Logger
     ) {
         self.nimURL = nimURL
         self.dispatchMode = dispatchMode
+        self.speech = speech
         self.connector = connector
         self.clock = clock
         self.limits = limits
@@ -76,7 +78,8 @@ actor CallSession {
     func open() async -> Bool {
         do {
             let session = try await NIMSession.open(
-                connector: connector, url: nimURL, timeout: limits.nimConnectTimeoutSeconds)
+                connector: connector, url: nimURL, timeout: limits.nimConnectTimeoutSeconds,
+                instructions: speech.instructions, tools: speech.tools)
             install(session)
             return true
         } catch {

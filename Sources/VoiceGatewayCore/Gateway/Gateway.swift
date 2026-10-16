@@ -49,7 +49,7 @@ public final class Gateway: Sendable {
     }
 
     func describe(_ detail: String) -> String {
-        "\(detail) Dispatch: \(config.dispatch.rawValue)."
+        "\(detail) Dispatch: \(config.effectiveDispatch.rawValue). Speech: \(config.speech.rawValue)."
     }
 
     public func health() async -> VoiceHealth {

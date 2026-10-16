@@ -26,13 +26,13 @@ final class GatewayHarness: Sendable {
 
     static func start(
         options: FakeNIMServer.Options = .init(), password: String? = nil, limits: GatewayLimits = .contract,
-        nimURL: String? = nil, dispatch: DispatchMode = .tool, releases: ReleaseList.Fetch? = nil, script: @escaping FakeNIMScript = { _ in }
+        nimURL: String? = nil, dispatch: DispatchMode = .tool, speech: SpeechMode = .model, releases: ReleaseList.Fetch? = nil, script: @escaping FakeNIMScript = { _ in }
     ) async -> GatewayHarness {
         let nim = FakeNIMServer(options: options, script: script)
         await nim.start()
         let clock = ManualClock()
         let gateway = Gateway(
-            config: GatewayConfig(port: 0, nimURL: nimURL ?? nim.url, password: password, dispatch: dispatch), limits: limits, clock: clock, releases: releases)
+            config: GatewayConfig(port: 0, nimURL: nimURL ?? nim.url, password: password, dispatch: dispatch, speech: speech), limits: limits, clock: clock, releases: releases)
         let (ports, announce) = AsyncStream.makeStream(of: Int.self)
         let app = GatewayApp.make(
             gateway: gateway, host: "127.0.0.1", port: 0,

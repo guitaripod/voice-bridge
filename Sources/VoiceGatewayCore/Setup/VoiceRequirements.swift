@@ -2,8 +2,13 @@ import Foundation
 
 /// What the voice model needs from a machine and the names it runs under.
 public enum VoiceRequirements {
-    public static let minimumCardMB = 80_000
-    public static let freeVRAMMB = 70_000
+    /// The container measured 58 GB in use with the default engine shares below; a card under 64 GB has no
+    /// headroom for it, and the free memory needed to start is that measure plus a margin.
+    public static let minimumCardMB = 64_000
+    public static let freeVRAMMB = 62_000
+    public static let defaultLLMMemUtil = 0.30
+    public static let defaultTTSMemUtil = 0.25
+    public static let memUtilRange = 0.1...0.6
     public static let modelBytes: Int64 = 46_868_000_000
     public static let imageBytes: Int64 = 22_500_000_000
     public static let modelMinutes = 15

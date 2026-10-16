@@ -29,13 +29,18 @@ extension Doctor {
         case .down(let reason):
             return SetupCheck(
                 id: "voice.engine", state: .blocked,
-                facts: mode.merging(["state": "down", "reason": reason]) { _, new in new },
+                facts: mode.merging(["state": "down", "reason": reason]) { _, new in new }.merging(failureFacts()) { _, new in new },
                 detail: "The voice engine is not running.")
         case .needsSetup:
             return SetupCheck(
                 id: "voice.engine", state: .todo, facts: mode.merging(["state": "needsSetup"]) { _, new in new },
                 detail: "The voice engine waits for the steps above.")
         }
+    }
+
+    private func failureFacts() -> [String: String] {
+        guard let failure else { return [:] }
+        return failure.facts.merging(["failure": failure.id]) { _, new in new }
     }
 
     private func firstMissingPrerequisite() -> String? {

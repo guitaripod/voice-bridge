@@ -28,7 +28,7 @@ struct DoctorTests {
         #expect(report.checks.map(\.id) == ["voice.gpu", "voice.vram", "voice.docker", "voice.cdi", "voice.model", "voice.image", "voice.engine", "voice.gateway"])
         #expect(report.checks.allSatisfy { $0.state == .ok })
         #expect(check(report, "voice.gpu").facts == ["name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition"])
-        #expect(check(report, "voice.vram").facts == ["totalMB": "97887", "needMB": "70000"])
+        #expect(check(report, "voice.vram").facts == ["totalMB": "97887", "needMB": "62000"])
         #expect(check(report, "voice.engine").facts["state"] == "stopped")
         #expect(check(report, "voice.gateway").facts == ["version": "9.9.9"])
     }
@@ -57,7 +57,7 @@ struct DoctorTests {
         #expect(check(report, "voice.gpu").state == .ok)
         let vram = check(report, "voice.vram")
         #expect(vram.state == .unavailable)
-        #expect(vram.facts == ["totalMB": "49140", "needMB": "70000"])
+        #expect(vram.facts == ["totalMB": "49140", "needMB": "62000"])
         #expect(check(report, "voice.model").fix == nil)
     }
 
@@ -72,7 +72,7 @@ struct DoctorTests {
         #expect(engine.state == .blocked)
         #expect(engine.fix == nil)
         #expect(engine.facts["freeMB"] == "39325")
-        #expect(engine.facts["needMB"] == "70000")
+        #expect(engine.facts["needMB"] == "62000")
         #expect(engine.facts["holders"] == "python3,VLLM::EngineCore")
         #expect(!report.ready)
     }
@@ -248,8 +248,8 @@ struct DoctorTests {
     }
 
     @Test func theWireShapeIsStable() throws {
-        let check = SetupCheck(id: "voice.vram", state: .ok, facts: ["totalMB": "97887", "needMB": "70000"])
-        #expect(String(decoding: try SetupCodec.encode(check), as: UTF8.self) == #"{"facts":{"needMB":"70000","totalMB":"97887"},"id":"voice.vram","state":"ok"}"#)
+        let check = SetupCheck(id: "voice.vram", state: .ok, facts: ["totalMB": "97887", "needMB": "62000"])
+        #expect(String(decoding: try SetupCodec.encode(check), as: UTF8.self) == #"{"facts":{"needMB":"62000","totalMB":"97887"},"id":"voice.vram","state":"ok"}"#)
         let fix = SetupFix(id: "voice.downloadModel", kind: .job, bytes: 46_868_000_000, minutes: 15)
         #expect(String(decoding: try SetupCodec.encode(fix), as: UTF8.self) == #"{"bytes":46868000000,"id":"voice.downloadModel","kind":"job","minutes":15}"#)
         let command = FixCommands.cdi

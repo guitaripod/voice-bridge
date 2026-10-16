@@ -12,6 +12,7 @@ final class FakeHost: CommandRunner {
         var usedAfterFirstReading: Int?
         var runFails: String?
         var stopLeavesContainer = false
+        var logs = ""
     }
 
     private let state: Mutex<State>
@@ -69,6 +70,7 @@ final class FakeHost: CommandRunner {
             case "rm":
                 if spec.arguments.last == VoiceRequirements.containerName { state.machine.container = nil }
                 return CommandResult()
+            case "logs": return CommandResult(output: state.logs)
             case "pull": return CommandResult(output: "latest: Pulling from x\n")
             default: break
             }

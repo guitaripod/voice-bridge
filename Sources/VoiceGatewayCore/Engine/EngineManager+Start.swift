@@ -6,13 +6,19 @@ enum StartOutcome: Sendable, Equatable {
 }
 
 extension EngineManager {
-    static func runArguments(modelRoot: String) -> [String] {
+    /// Without `--rm`, so the log survives an engine that dies while loading; the gateway removes the
+    /// container itself. The two shares are the memory each of the NIM's two vLLM engines reserves.
+    static func runArguments(modelRoot: String, llmMemUtil: Double, ttsMemUtil: Double) -> [String] {
         [
-            "run", "-d", "--rm", "--name", VoiceRequirements.containerName, "--device", "nvidia.com/gpu=0", "--shm-size=8GB",
-            "-e", "NIM_HTTP_API_PORT=\(VoiceRequirements.nimPort)", "-p", "127.0.0.1:\(VoiceRequirements.nimPort):\(VoiceRequirements.nimPort)",
+            "run", "-d", "--name", VoiceRequirements.containerName, "--device", "nvidia.com/gpu=0", "--shm-size=8GB",
+            "-e", "NIM_HTTP_API_PORT=\(VoiceRequirements.nimPort)",
+            "-e", "LLM_GPU_MEM_UTIL=\(share(llmMemUtil))", "-e", "TTS_GPU_MEM_UTIL=\(share(ttsMemUtil))",
+            "-p", "127.0.0.1:\(VoiceRequirements.nimPort):\(VoiceRequirements.nimPort)",
             "-v", "\(modelRoot):/data/models", "--entrypoint", "/s2s/run_s2s_server.sh", VoiceRequirements.imageName,
         ]
     }
+
+    static func share(_ value: Double) -> String { String(format: "%.2f", value) }
 
     /// A call wants the engine. When it is stopped and the GPU has the memory, the container starts and
     /// the answer is `loading`; anything else is reported as it is and nothing is started.
@@ -42,13 +48,15 @@ extension EngineManager {
             _ = await runner.run(CommandSpec("docker", ["rm", "-f", VoiceRequirements.containerName], timeout: 60))
         }
         activity.touch(at: clock.now())
-        let result = await runner.run(CommandSpec("docker", Self.runArguments(modelRoot: reading.model.root.path), timeout: 120))
+        let arguments = Self.runArguments(modelRoot: reading.model.root.path, llmMemUtil: settings.llmMemUtil, ttsMemUtil: settings.ttsMemUtil)
+        let result = await runner.run(CommandSpec("docker", arguments, timeout: 120))
         await facts.forget()
         guard result.succeeded else {
             let reason = result.tail(2).joined(separator: " ")
-            fail(reason.isEmpty ? "the container did not start" : reason)
+            let said = reason.isEmpty ? "the container did not start" : reason
+            fail(.startFailed(said, tail: result.tail(EngineFailure.tailLines)))
             logger.warning("engine start failed", metadata: ["reason": "\(reason)"])
-            return .down(reason: reason.isEmpty ? "the container did not start" : reason)
+            return .down(reason: said)
         }
         logger.info("engine container started")
         beginLoad()
@@ -61,8 +69,9 @@ extension EngineManager {
         loadTask = Task { [weak self] in await self?.pollLoad(from: started) }
     }
 
-    private func fail(_ reason: String) {
-        load = .failed(reason)
+    private func fail(_ detail: EngineFailure) {
+        load = .failed(detail.reason)
+        failure = detail
         failedAt = clock.now()
     }
 
@@ -82,18 +91,41 @@ extension EngineManager {
                 return
             }
             if elapsed >= settings.loadTimeoutSeconds {
-                fail("the voice engine was not ready after \(Int(settings.loadTimeoutSeconds / 60)) minutes")
+                let log = await containerLog()
+                fail(.notReady(minutes: Int(settings.loadTimeoutSeconds / 60), log: log))
+                logFailure(log)
                 await stopOurContainer()
                 return
             }
             if clock.now() - lastContainerCheck >= 10 {
                 lastContainerCheck = clock.now()
-                if await probe.containerState() == .absent {
-                    fail("the voice engine container stopped while loading")
-                    return
-                }
+                if await loadAborted() { return }
             }
             do { try await clock.sleep(until: clock.now() + settings.pollSeconds) } catch { return }
         }
+    }
+
+    /// The container is gone or has exited while it was loading. Its log is read first, because removing
+    /// the container removes the log, and goes into the failure and the gateway's own log.
+    private func loadAborted() async -> Bool {
+        let state = await probe.containerState()
+        switch state {
+        case .running, .other("created"), .other("restarting"), .other("paused"):
+            return false
+        case .absent, .other:
+            let log = state == .absent ? [] : await containerLog()
+            let free = await probe.gpu()?.freeMB ?? 0
+            let detail = EngineFailure.exited(log: log, freeMB: free)
+            fail(detail)
+            logFailure(log, detail: detail)
+            if state != .absent { await removeOurContainer() }
+            return true
+        }
+    }
+
+    private func logFailure(_ log: [String], detail: EngineFailure? = nil) {
+        logger.warning(
+            "voice engine did not come up",
+            metadata: ["failure": "\(detail?.id ?? failure?.id ?? "-")", "reason": "\(detail?.reason ?? failure?.reason ?? "-")", "log": "\(log.joined(separator: "\n"))"])
     }
 }

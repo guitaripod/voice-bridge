@@ -25,6 +25,10 @@ public enum VoiceTools {
         + "answer in your own words. When the person asks you to stop or cancel, call stop_agent. If you "
         + "did not understand, ask them to say it again. Do not speak unless the person spoke to you."
 
+    public static let mutedPrompt =
+        "You are a silent listener. The person is dictating to a coding agent. Never speak, never answer "
+        + "and never call anything. Only listen."
+
     private static let noArguments: JSONValue = .object([
         "type": .string("object"),
         "properties": .object([:]),
@@ -48,4 +52,22 @@ public enum VoiceTools {
             ackMessages: ["Stopping it.", "On it."],
             parameters: noArguments),
     ]
+}
+
+extension SpeechMode {
+    /// What the NIM is told when a session opens: the persona and tools of a model that speaks, or the
+    /// short instruction of one that only listens, with no tools at all.
+    public var instructions: String {
+        switch self {
+        case .muted: VoiceTools.mutedPrompt
+        case .model: VoiceTools.systemPrompt
+        }
+    }
+
+    public var tools: [VoiceTool] {
+        switch self {
+        case .muted: []
+        case .model: VoiceTools.all
+        }
+    }
 }

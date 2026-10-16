@@ -4,6 +4,8 @@ import Logging
 struct EngineSettings: Sendable, Equatable {
     var mode: EngineMode = .auto
     var idleStopSeconds: Double = 600
+    var llmMemUtil = VoiceRequirements.defaultLLMMemUtil
+    var ttsMemUtil = VoiceRequirements.defaultTTSMemUtil
     var typicalLoadSeconds = VoiceRequirements.typicalLoadSeconds
     var loadTimeoutSeconds = VoiceRequirements.loadTimeoutSeconds
     var pollSeconds = 2.0
@@ -35,6 +37,7 @@ actor EngineManager {
     var resolved: EngineMode?
     var load = LoadSnapshot.idle
     var failedAt = 0.0
+    var failure: EngineFailure?
     var loadTask: Task<Void, Never>?
 
     init(
@@ -85,6 +88,12 @@ actor EngineManager {
         if reading.container.exists { return .managed }
         if case .down = reading.nim { return .managed }
         return .external
+    }
+
+    /// The structured reason of the last failed start, while it is still worth saying.
+    func recentFailureDetail() -> EngineFailure? {
+        guard case .failed = load, clock.now() - failedAt < settings.failureMemorySeconds else { return nil }
+        return failure
     }
 
     private func recentFailure() -> String? {

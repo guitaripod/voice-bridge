@@ -66,7 +66,7 @@ fail() {
 
 if [ "$(uname -s)" = "Darwin" ]; then
   say "Voice calls run an NVIDIA model, and a Mac has no NVIDIA GPU, so voice-bridge cannot run on this computer."
-  say "Install it on a Linux computer with an NVIDIA GPU that has 80 GB of memory; Tailscode on this Mac can still make calls through it."
+  say "Install it on a Linux computer with an NVIDIA GPU that has 64 GB of memory; Tailscode on this Mac can still make calls through it."
   exit 3
 fi
 
@@ -382,7 +382,7 @@ After=docker.service network-online.target
 [Service]
 Type=simple
 ExecStartPre=-$docker rm -f nemotron-labs-voicechat
-ExecStart=$docker run --rm --name=nemotron-labs-voicechat --device nvidia.com/gpu=0 --shm-size=8GB -e NIM_HTTP_API_PORT=9000 -p 127.0.0.1:9000:9000 -v $model/nemotron-labs-voicechat_v1.0.0:/data/models --entrypoint /s2s/run_s2s_server.sh nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest
+ExecStart=$docker run --rm --name=nemotron-labs-voicechat --device nvidia.com/gpu=0 --shm-size=8GB -e NIM_HTTP_API_PORT=9000 -e LLM_GPU_MEM_UTIL=0.30 -e TTS_GPU_MEM_UTIL=0.25 -p 127.0.0.1:9000:9000 -v $model/nemotron-labs-voicechat_v1.0.0:/data/models --entrypoint /s2s/run_s2s_server.sh nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest
 ExecStop=$docker stop nemotron-labs-voicechat
 TimeoutStartSec=600
 TimeoutStopSec=60
@@ -461,14 +461,14 @@ preflight_tailscale() {
   esac
 }
 
-# Voice needs an NVIDIA card with 80 GB. A source build takes a quarter of an hour, so a machine that
+# Voice needs an NVIDIA card with 64 GB. A source build takes a quarter of an hour, so a machine that
 # has no nvidia-smi at all is told before it is made to wait; the program's own check, which also
 # reads the card's size, runs once there is a program.
 precheck_source_hardware() {
   [ -z "$FORCE" ] || return 0
   command -v nvidia-smi >/dev/null 2>&1 && return 0
   say ""
-  say "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine. nvidia-smi is not installed."
+  say "No NVIDIA GPU with 64 GB: voice calls cannot run on this machine. nvidia-smi is not installed."
   say "Nothing was installed. If you want the gateway here anyway, run this again with --force."
   exit 3
 }

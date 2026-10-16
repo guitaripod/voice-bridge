@@ -43,12 +43,14 @@ extension CallSession {
         case .audioDelta(let pcm):
             await modelAudio(pcm, at: now)
         case .transcriptDelta(let delta):
+            if speech == .muted { break }
             if loop.feed(delta) {
                 fault(.loop)
             } else {
                 outbox.send(.say(text: loop.text, final: false))
             }
         case .transcriptDone(let transcript):
+            if speech == .muted { break }
             outbox.send(.say(text: transcript, final: true))
             loop.reset()
         case .responseDone:
@@ -108,6 +110,7 @@ extension CallSession {
         lastActivity = now
         let seconds = PCM.seconds(bytes: pcm.count)
         recycle.addAudio(seconds: seconds)
+        if speech == .muted { return }
         if runaway.audio(seconds: seconds, at: now) {
             fault(.runaway)
             return
@@ -122,6 +125,10 @@ extension CallSession {
     }
 
     private func answerTool(callID: String, name: String) {
+        if speech == .muted {
+            nim?.answer(callID: callID, output: ToolRouter.unknown)
+            return
+        }
         toolPending = true
         lastActivity = clock.now()
         let outcome = ToolRouter.run(

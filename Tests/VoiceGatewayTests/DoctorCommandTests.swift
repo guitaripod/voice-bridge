@@ -22,7 +22,7 @@ struct DoctorCommandTests {
         let lines = output.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         #expect(lines[0] == "This machine has an NVIDIA RTX PRO 6000 Blackwell Workstation Edition with 96 GB: voice calls can run here.")
         #expect(output.contains("  ✓ GPU: NVIDIA RTX PRO 6000 Blackwell Workstation Edition\n"))
-        #expect(output.contains("  ✓ GPU memory: 96 GB (the voice model needs a card with 80 GB)\n"))
+        #expect(output.contains("  ✓ GPU memory: 96 GB (the voice model needs a card with 64 GB)\n"))
         #expect(output.contains("  ✓ Docker: works for this user\n"))
         #expect(output.contains("  ✓ GPU for containers: set up\n"))
         #expect(output.contains("  ✓ Voice model: downloaded (47 GB)\n"))
@@ -37,7 +37,7 @@ struct DoctorCommandTests {
         machine.gpuName = nil
         let (output, status) = await text(machine)
         #expect(status == 3)
-        #expect(output.hasPrefix("No NVIDIA GPU with 80 GB: voice calls cannot run on this machine. nvidia-smi found no NVIDIA GPU.\n"))
+        #expect(output.hasPrefix("No NVIDIA GPU with 64 GB: voice calls cannot run on this machine. nvidia-smi found no NVIDIA GPU.\n"))
         #expect(output.contains("  ✗ GPU: none found (nvidia-smi did not answer)\n"))
         #expect(!output.contains("Docker"))
         #expect(!output.contains("Voice model"))
@@ -50,8 +50,8 @@ struct DoctorCommandTests {
         machine.totalMB = 46_068
         let (output, status) = await text(machine)
         #expect(status == 3)
-        #expect(output.hasPrefix("No NVIDIA GPU with 80 GB: voice calls cannot run on this machine. The card here, an NVIDIA L40S, has 45 GB.\n"))
-        #expect(output.contains("  ✗ GPU memory: 45 GB, too small (the voice model needs a card with 80 GB)\n"))
+        #expect(output.hasPrefix("No NVIDIA GPU with 64 GB: voice calls cannot run on this machine. The card here, an NVIDIA L40S, has 45 GB.\n"))
+        #expect(output.contains("  ✗ GPU memory: 45 GB, too small (the voice model needs a card with 64 GB)\n"))
     }
 
     @Test func aCardWithoutNVIDIAInItsNameIsStillCalledOne() async {
@@ -106,7 +106,7 @@ struct DoctorCommandTests {
         machine.holders = [.init(name: "/usr/bin/python3", mb: 30_000), .init(name: "VLLM::EngineCore", mb: 25_000)]
         let (output, status) = await text(machine)
         #expect(status == 0)
-        #expect(output.contains("  ✗ Voice engine: the GPU is held by python3, VLLM::EngineCore (38 GB free, the voice model needs 70 GB)\n"))
+        #expect(output.contains("  ✗ Voice engine: the GPU is held by python3, VLLM::EngineCore (38 GB free, the voice model needs 62 GB)\n"))
         #expect(output.contains("never stops another program's job"))
         #expect(output.hasSuffix("Everything is installed. Once the GPU is free again, a call starts the voice engine.\n"))
     }

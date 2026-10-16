@@ -12,18 +12,15 @@ public enum NIMMessages {
     public static let audioFormat = "pcm16"
 
     public static func sessionUpdate(instructions: String, tools: [VoiceTool]) -> String {
-        envelope(
-            "session.update",
-            [
-                "session": .object([
-                    "audio": .object([
-                        "input": .object(["format": .string(audioFormat)]),
-                        "output": .object(["format": .string(audioFormat)]),
-                    ]),
-                    "instructions": .string(instructions),
-                    "tools": .array(tools.map(toolObject)),
-                ])
-            ])
+        var session: [String: JSONValue] = [
+            "audio": .object([
+                "input": .object(["format": .string(audioFormat)]),
+                "output": .object(["format": .string(audioFormat)]),
+            ]),
+            "instructions": .string(instructions),
+        ]
+        if !tools.isEmpty { session["tools"] = .array(tools.map(toolObject)) }
+        return envelope("session.update", ["session": .object(session)])
     }
 
     public static func appendAudio(_ pcm: Data) -> String {

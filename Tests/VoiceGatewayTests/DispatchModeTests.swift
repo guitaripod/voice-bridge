@@ -102,17 +102,17 @@ struct LateTranscriptTests {
 @Suite(.serialized)
 struct DispatchModeTests {
     @Test func configReadsTheMode() {
-        #expect(GatewayConfig(environment: [:]).dispatch == .tool)
+        #expect(GatewayConfig(environment: [:]).dispatch == .transcripts)
         #expect(GatewayConfig(environment: ["VOICE_DISPATCH": "transcripts"]).dispatch == .transcripts)
         #expect(GatewayConfig(environment: ["VOICE_DISPATCH": "TOOL"]).dispatch == .tool)
-        #expect(GatewayConfig(environment: ["VOICE_DISPATCH": "nonsense"]).dispatch == .tool)
+        #expect(GatewayConfig(environment: ["VOICE_DISPATCH": "nonsense"]).dispatch == .transcripts)
     }
 
     @Test func healthDetailNamesTheMode() async throws {
         for mode in [DispatchMode.tool, .transcripts] {
             let harness = await GatewayHarness.start(dispatch: mode)
             let health = await harness.gateway.health()
-            #expect(health.detail?.contains("Dispatch: \(mode.rawValue).") == true)
+            #expect(health.detail?.contains("Dispatch: \(mode.rawValue). Speech: model.") == true)
             await harness.stop()
         }
     }
@@ -155,7 +155,7 @@ struct DispatchModeTests {
         await client.close()
     }
 
-    @Test func toolModeStaysTheDefault() async throws {
+    @Test func toolModeStillWorksWhenTheModelSpeaks() async throws {
         let harness = await GatewayHarness.start()
         defer { Task { await harness.stop() } }
         let client = try await harness.call()

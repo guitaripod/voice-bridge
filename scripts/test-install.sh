@@ -79,7 +79,7 @@ case "${1:-}" in
       --commands) [ "${FAKE_DOCTOR:-}" = needs-docker ] && printf 'sudo apt-get install -y docker.io\nsudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml\n'; exit 0 ;;
     esac
     case "${FAKE_DOCTOR:-needs-tailscode}" in
-      nogpu) echo "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine. nvidia-smi found no NVIDIA GPU."; exit 3 ;;
+      nogpu) echo "No NVIDIA GPU with 64 GB: voice calls cannot run on this machine. nvidia-smi found no NVIDIA GPU."; exit 3 ;;
       ready) echo "This machine has an NVIDIA RTX PRO 6000 with 96 GB: voice calls can run here."; echo "  ✓ everything"; exit 0 ;;
       *) echo "This machine has an NVIDIA RTX PRO 6000 with 96 GB: voice calls can run here."; echo "  ○ Voice model: not downloaded yet"; exit 0 ;;
     esac ;;
@@ -245,7 +245,7 @@ expect_lacks "$OUT" "hunter2" "an env file that is already there: the password i
 fresh_home
 BASE="" ENV_EXTRA="FAKE_DOCTOR=nogpu" install --no-service
 check "no GPU: stops with exit 3" test "$RC" -eq 3
-expect_has "$OUT" "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine." "no GPU: says so in the program's words"
+expect_has "$OUT" "No NVIDIA GPU with 64 GB: voice calls cannot run on this machine." "no GPU: says so in the program's words"
 expect_has "$OUT" "Nothing was installed." "no GPU: says nothing was installed"
 expect_has "$OUT" "--force" "no GPU: offers --force"
 check "no GPU: no program, link, env file, unit or installer is left behind" \
@@ -485,7 +485,7 @@ esac'
   shim nvidia-smi 'echo "NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver." >&2; exit 9'
   BASE="$SERVER/real" ENV_EXTRA="VOICE_NIM_URL=$NIM_URL" install --no-service
   check "the real program without a GPU: exit 3 and nothing installed" test "$RC" -eq 3 -a ! -e "$SHARE/bin" -a ! -e "$HOME_DIR/.config"
-  expect_has "$OUT" "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine." "the real program without a GPU: the honest verdict"
+  expect_has "$OUT" "No NVIDIA GPU with 64 GB: voice calls cannot run on this machine." "the real program without a GPU: the honest verdict"
 
   fresh_home
   real_tools

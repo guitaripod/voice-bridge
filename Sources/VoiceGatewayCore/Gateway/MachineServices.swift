@@ -38,7 +38,8 @@ public struct MachineServices: Sendable {
 
     public static func live(config: GatewayConfig, environment: [String: String], clock: any VoiceClock, logger: Logger) -> MachineServices {
         let settings = EngineSettings(
-            mode: EngineMode.effective(config.engine, nimURL: config.nimURL), idleStopSeconds: config.idleStopMinutes * 60)
+            mode: EngineMode.effective(config.engine, nimURL: config.nimURL), idleStopSeconds: config.idleStopMinutes * 60,
+            llmMemUtil: config.llmMemUtil, ttsMemUtil: config.ttsMemUtil)
         return MachineServices(
             runner: ProcessRunner(environment: environment), paths: MachinePaths(environment: environment),
             nim: HTTPNIMHealthProbe(nimURL: config.nimURL), settings: settings, clock: clock, environment: environment, logger: logger)
@@ -49,7 +50,8 @@ public struct MachineServices: Sendable {
         let managed = await engine.isManaged(reading)
         let status = await engine.derive(reading, managed: managed)
         let view = await jobs.view()
-        return [Doctor(facts: reading, engine: status, managed: managed, jobs: view, version: GatewayInfo.version).report()]
+        let failure = await engine.recentFailureDetail()
+        return [Doctor(facts: reading, engine: status, managed: managed, jobs: view, version: GatewayInfo.version, failure: failure).report()]
     }
 
     /// Runs until cancelled: the idle stop of the engine.

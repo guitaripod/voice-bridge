@@ -24,8 +24,8 @@ struct EngineManagerTests {
         #expect(run.executable == "docker")
         #expect(
             run.arguments == [
-                "run", "-d", "--rm", "--name", "nemotron-labs-voicechat", "--device", "nvidia.com/gpu=0", "--shm-size=8GB",
-                "-e", "NIM_HTTP_API_PORT=9000", "-p", "127.0.0.1:9000:9000", "-v", "\(fixture.root.paths.modelDir.path):/data/models",
+                "run", "-d", "--name", "nemotron-labs-voicechat", "--device", "nvidia.com/gpu=0", "--shm-size=8GB",
+                "-e", "NIM_HTTP_API_PORT=9000", "-e", "LLM_GPU_MEM_UTIL=0.30", "-e", "TTS_GPU_MEM_UTIL=0.25", "-p", "127.0.0.1:9000:9000", "-v", "\(fixture.root.paths.modelDir.path):/data/models",
                 "--entrypoint", "/s2s/run_s2s_server.sh", "nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest",
             ])
     }
@@ -41,7 +41,7 @@ struct EngineManagerTests {
     @Test func nothingStartsWhileTheGPUIsHeldAndTheHoldersAreNamed() async {
         let fixture = EngineFixture(Self.busyMachine)
         let outcome = await fixture.engine.requestStart()
-        #expect(outcome == .status(.busy(freeMB: 39_325, needMB: 70_000, holders: ["VLLM::EngineCore"])))
+        #expect(outcome == .status(.busy(freeMB: 39_325, needMB: 62_000, holders: ["VLLM::EngineCore"])))
         #expect(fixture.host.runs.isEmpty)
         #expect(fixture.host.stops.isEmpty)
     }
@@ -61,7 +61,7 @@ struct EngineManagerTests {
     @Test func exactlyEnoughMemoryStarts() async {
         var machine = FakeMachine()
         machine.totalMB = 97_887
-        machine.usedMB = 97_887 - 70_000
+        machine.usedMB = 97_887 - 62_000
         let fixture = EngineFixture(machine)
         #expect(await fixture.engine.requestStart() == .status(.loading(progress: 0)))
         #expect(fixture.host.runs.count == 1)
@@ -186,7 +186,7 @@ struct EngineManagerTests {
         let free = EngineFixture()
         #expect(await free.engine.status().status == .stopped)
         let held = EngineFixture(Self.busyMachine)
-        #expect(await held.engine.status().status == .busy(freeMB: 39_325, needMB: 70_000, holders: ["VLLM::EngineCore"]))
+        #expect(await held.engine.status().status == .busy(freeMB: 39_325, needMB: 62_000, holders: ["VLLM::EngineCore"]))
         let missing = EngineFixture(FakeMachine(imageBytes: nil))
         #expect(await missing.engine.status().status == .needsSetup)
     }

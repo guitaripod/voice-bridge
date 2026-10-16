@@ -17,7 +17,8 @@ extension CallSession {
         }
         do {
             let fresh = try await NIMSession.open(
-                connector: connector, url: nimURL, timeout: limits.nimConnectTimeoutSeconds)
+                connector: connector, url: nimURL, timeout: limits.nimConnectTimeoutSeconds,
+                instructions: speech.instructions, tools: speech.tools)
             guard !finished else {
                 swapping = false
                 await fresh.close()

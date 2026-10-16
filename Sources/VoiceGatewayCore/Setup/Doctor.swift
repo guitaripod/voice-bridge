@@ -17,6 +17,7 @@ struct Doctor: Sendable {
     let managed: Bool
     let jobs: JobsView
     let version: String
+    var failure: EngineFailure?
 
     func report() -> SetupReport {
         var checks: [SetupCheck]

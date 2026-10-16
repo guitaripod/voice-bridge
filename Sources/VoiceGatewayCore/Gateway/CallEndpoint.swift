@@ -60,7 +60,7 @@ extension Gateway {
         logger.info("call", metadata: ["client": "\(hello.client.rawValue)", "app": "\(hello.app)"])
         guard await awaitEngine(outbox: outbox, presence: presence) else { return }
         let session = CallSession(
-            nimURL: config.nimURL, dispatchMode: config.dispatch, connector: connector, clock: clock, limits: limits, outbox: outbox, logger: logger)
+            nimURL: config.nimURL, dispatchMode: config.effectiveDispatch, speech: config.speech, connector: connector, clock: clock, limits: limits, outbox: outbox, logger: logger)
         guard await session.open() else { return }
         await session.begin()
         await withTaskGroup(of: Void.self) { group in

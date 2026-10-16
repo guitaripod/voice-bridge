@@ -13,7 +13,8 @@ final class EngineFixture: Sendable {
 
     init(
         _ machine: FakeMachine = FakeMachine(), mode: EngineMode = .managed, nim: NIMProbeResult = .down("not reachable"),
-        idleMinutes: Double = 10, jobsActive: @escaping @Sendable () async -> Bool = { false }
+        idleMinutes: Double = 10, llmMemUtil: Double = VoiceRequirements.defaultLLMMemUtil,
+        ttsMemUtil: Double = VoiceRequirements.defaultTTSMemUtil, jobsActive: @escaping @Sendable () async -> Bool = { false }
     ) {
         host = FakeHost(machine)
         root = FakeRoot(machine)
@@ -22,7 +23,8 @@ final class EngineFixture: Sendable {
         let probe = MachineProbe(runner: host, paths: root.paths, nim: self.nim)
         facts = FactsCache(probe: probe, clock: clock)
         engine = EngineManager(
-            settings: EngineSettings(mode: mode, idleStopSeconds: idleMinutes * 60), probe: probe, facts: facts, runner: host,
+            settings: EngineSettings(
+                mode: mode, idleStopSeconds: idleMinutes * 60, llmMemUtil: llmMemUtil, ttsMemUtil: ttsMemUtil), probe: probe, facts: facts, runner: host,
             nim: self.nim, clock: clock, activity: activity, jobsActive: jobsActive)
     }
 

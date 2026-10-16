@@ -157,6 +157,10 @@ struct DoctorText: Sendable {
             let free = Self.gigabytes(mebibytes: facts["freeMB"].flatMap(Int.init) ?? 0)
             let need = (facts["needMB"].flatMap(Int.init) ?? VoiceRequirements.freeVRAMMB) / 1_000
             return "Voice engine: the GPU is held by \(who.isEmpty ? "another job" : who) (\(free) GB free, the voice model needs \(need) GB)"
+        case "down" where facts["failure"] == EngineFailure.gpuMemory:
+            let free = Self.gigabytes(mebibytes: facts["freeMB"].flatMap(Int.init) ?? 0)
+            let need = Self.gigabytes(mebibytes: facts["needMB"].flatMap(Int.init) ?? 0)
+            return "Voice engine: did not start, the GPU had \(free) GB free and the engine wanted \(need) GB for one of its two models"
         case "down": return "Voice engine: not running (\(facts["reason"] ?? "no reason given"))"
         default: return "Voice engine: waits for the steps above"
         }
@@ -166,6 +170,10 @@ struct DoctorText: Sendable {
         var found: [String] = []
         if check.id == "voice.engine", check.facts["state"] == "busy" {
             found.append("voice-bridge never stops another program's job: stop it, and a call starts the engine.")
+        }
+        if check.id == "voice.engine", check.facts["state"] == "down", let tail = check.facts["tail"] {
+            found.append("The last lines of its log:")
+            found += tail.split(whereSeparator: \.isNewline).suffix(3).map { "  \($0.prefix(160))" }
         }
         if let failure = check.facts["lastFailure"] {
             found.append("The last attempt failed (\(Self.failure(failure))). Tailscode will try again.")

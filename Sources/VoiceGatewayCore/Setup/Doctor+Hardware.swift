@@ -30,7 +30,7 @@ extension Doctor {
                 name,
                 SetupCheck(
                     id: "voice.vram", state: .unavailable, facts: vramFacts,
-                    detail: "The voice model needs a card with 80 GB; this one has \(total / 1_000) GB."),
+                    detail: "The voice model needs a card with \(VoiceRequirements.minimumCardMB / 1_000) GB; this one has \(total / 1_000) GB."),
             ])
         }
         return .fine([name, SetupCheck(id: "voice.vram", state: .ok, facts: vramFacts)])
