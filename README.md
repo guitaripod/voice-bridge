@@ -2,8 +2,9 @@
 
 The gateway between Tailscode clients and NVIDIA's NemotronLabs VoiceChat 11B streaming server (the
 NIM). Clients speak the `VoiceKit` wire (CodingAgentKit) to `ws /call`; the gateway speaks the NIM's
-realtime protocol, runs the three tools (`send_to_agent`, `agent_status`, `stop_agent`), and watches
-the model for runaway, loops, engine errors and silent clients. The contract is
+realtime protocol, and uses the model as an ear: it listens, transcribes the person's speech live, and
+every final transcript goes to the agent as a `dispatch`. The model never speaks to the person (see Speech
+and dispatch). The gateway also watches for engine errors and silent clients. The contract is
 `iOS/Tailscode/docs/voice-call.md`.
 
 It listens on `127.0.0.1` and on this machine's tailnet IPv4 (`tailscale ip -4`, read once at start).
@@ -11,7 +12,7 @@ Without tailscale it listens on loopback only and says so. It never binds `0.0.0
 
 ## Install
 
-On a Linux computer with an NVIDIA GPU that has 80 GB of memory, one command:
+On a Linux computer with an NVIDIA GPU that has 64 GB or more of memory, one command:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/guitaripod/voice-bridge/master/install.sh | bash
@@ -56,7 +57,7 @@ voice-bridge update             install the newest release and restart when it i
 A word it does not know is refused with exit 2 instead of starting a second server. `doctor` reads the same checks
 the gateway serves on `GET /setup`, from this machine, without a running gateway, and starts no job. It prints
 the hardware verdict first ("This machine has an NVIDIA RTX PRO 6000 Blackwell Workstation Edition with 96 GB:
-voice calls can run here." or "No NVIDIA GPU with 80 GB: voice calls cannot run on this machine."), then one line
+voice calls can run here." or "No NVIDIA GPU with 64 GB: voice calls cannot run on this machine."), then one line
 per check with a mark, the command to run or the note that Tailscode does the step. It exits 3 when the machine
 cannot run voice calls, 0 otherwise; `--json` prints the `SetupReport`. It reads `~/.config/voice-bridge.env` under
 the real environment, so it judges the machine the way the service sees it. A download the gateway is running
@@ -90,7 +91,10 @@ the oldest worth supporting) and publishes `voice-bridge-<version>-linux-<arch>.
 | `VOICE_PORT` | `4102` | listen port |
 | `VOICE_NIM_URL` | `ws://127.0.0.1:9000/v1/realtime` | the NIM's realtime socket |
 | `VOICE_PASSWORD` | unset | when set, `Authorization: Bearer <password>` is required on `/call` and `/health` |
-| `VOICE_DISPATCH` | `tool` | `tool` or `transcripts`, see Dispatch modes; shown in the `/health` detail |
+| `VOICE_DISPATCH` | `transcripts` | `transcripts` or `tool`, see Speech and dispatch; shown in the `/health` detail |
+| `VOICE_SPEECH` | `muted` | `muted` or `model`, see Speech and dispatch; shown in the `/health` detail |
+| `VOICE_LLM_MEM_UTIL` | `0.30` | share of the card the NIM's language engine reserves, 0.1 to 0.6, see Memory: the NIM's two engines |
+| `VOICE_TTS_MEM_UTIL` | `0.25` | share of the card the NIM's speech engine reserves, 0.1 to 0.6 |
 | `VOICE_LOG_LEVEL` | `info` | swift-log level |
 | `VOICE_ENGINE` | `auto` | `managed`, `external` or `auto`, see Managed and external engines |
 | `VOICE_IDLE_STOP_MINUTES` | `10` | minutes without a call or a setup job before the gateway stops its engine; `0` never stops it |
@@ -108,39 +112,57 @@ the oldest worth supporting) and publishes `voice-bridge-<version>-linux-<arch>.
 | `loading` | the NIM is starting (its 503, or a container of ours that is not ready yet) |
 | `stopped` | managed, everything is installed, the container is not running and the GPU has the memory: a call starts it |
 | `needsSetup` | managed, something is missing: see `GET /setup` |
-| `busy` | a call is held, or (managed, stopped) the GPU's free memory is under 70000 MB; the detail names the programs holding it |
+| `busy` | a call is held, or (managed, stopped) the GPU's free memory is under 62000 MB; the detail names the programs holding it |
 | `down` | no answer, or the container died or failed to start |
 
 An external engine only ever shows `ready`, `loading`, `down` and `busy` (a held call). The probe is cached
 for 2 seconds.
 
-## Dispatch modes
+## Speech and dispatch
 
-How the person's words reach the agent is a switch, because the model's tool arguments and its habit of
-calling `send_to_agent` are unreliable. The text sent is always the model's own transcript of the speech.
+The 2026-10-16 gate (see Gate results) showed that the model does not call tools reliably and ignores
+instructions to be silent, so the gateway uses it as an ear. Two switches decide what it does, and the
+`/health` detail names both ("Dispatch: transcripts. Speech: muted.").
 
-- `tool` (default): the final transcripts since the last dispatch are kept, and when the model calls
-  `send_to_agent` they are joined (at most 4000 characters) and sent as one `dispatch`; the tool answers
-  `Sent.`, or `Nothing to send.` when there is nothing. If the model calls it after a speech turn has
+`VOICE_SPEECH`:
+
+- `muted` (default): the model listens and transcribes and nothing else. The session opens with a short ASCII
+  instruction ("You are a silent listener...") and **no tools at all**, so the model cannot call anything or
+  speak an acknowledgement. Whatever audio or words it produces anyway is discarded: no binary audio and no
+  `say` frame reach the client, and the phase is never `speaking` (only `listening`, `hearing` and `degraded`).
+  The runaway and loop watchdogs ignore that discarded output, so a model that rambles into the void never
+  degrades the call. Engine errors, a closed NIM socket and 10 s of NIM silence while a reply is owed still
+  do. A tool call that arrives anyway is answered "That tool does not exist." and does nothing.
+- `model`: today's behaviour for experiments. The model speaks, its audio and words are forwarded, the
+  watchdogs apply, and the persona and the three tools (`send_to_agent`, `agent_status`, `stop_agent`) are
+  registered.
+
+`VOICE_DISPATCH` decides how the person's words reach the agent. The text sent is always the model's own
+transcript of the speech.
+
+- `transcripts` (default): every final transcript of at least 3 words (after trimming) is dispatched as soon
+  as it completes. Shorter transcripts are shown to the client but not sent. `send_to_agent`, when the model
+  can call it, only answers `Sent.`, or `Already sent.` when the current turn was dispatched already.
+- `tool` (needs `VOICE_SPEECH=model`): the final transcripts since the last dispatch are kept, and when the
+  model calls `send_to_agent` they are joined (at most 4000 characters) and sent as one `dispatch`; the tool
+  answers `Sent.`, or `Nothing to send.` when there is nothing. If the model calls it after a speech turn has
   ended but before that turn's transcript has arrived, the tool still answers `Sent.` at once and the
   `dispatch` goes out the moment the transcript completes, joined with anything pending. Without a
   transcript within 3 s the intent is dropped and logged. If the model never calls the tool, nothing is sent.
-- `transcripts`: every final transcript of at least 3 words (after trimming) is dispatched as soon as it
-  completes, whatever the model does. `send_to_agent` only answers `Sent.`, or `Already sent.` when the
-  current turn was dispatched already. Shorter transcripts are shown to the client but not sent.
+  A muted model has no tools, so `VOICE_DISPATCH=tool` with `VOICE_SPEECH=muted` dispatches transcripts.
 
-What decides between them is the gate rule in `iOS/Tailscode/docs/voice-call.md`: `send_to_agent` must be
-called on at least 95% of 50 scripted task utterances. `voice-probe run --json` reports
-`summary.sendToAgentRate` over the scripted utterances. At 95% or better keep `tool`; below that, use
-`transcripts`. The same run's `userTranscript` against what was said (word error rate) is the other
-input: `transcripts` sends every transcript error to the agent without the model's judgement in between.
+`voice-probe run --json` reports `summary.sendToAgentRate` and each utterance's `userTranscript`, which is
+what a new prompt or model is judged on: the rule in `iOS/Tailscode/docs/voice-call.md` is `send_to_agent` on
+at least 95% of 50 scripted task utterances before `tool` is worth keeping, and `transcripts` sends every
+transcript error to the agent without the model's judgement in between.
 
 ## Call behaviour worth knowing
 
 - One call at a time. A second caller gets `error(busy)`. A client speaking another protocol version
   gets `error(version)`. A NIM that cannot be reached gives `error(engineDown)`. 15 s without any
   client frame gives `error(silent)`.
-- The gateway sends `ready`, then `phase(listening)`. It never sends `phase(connecting)`.
+- The gateway sends `ready`, then `phase(listening)`. It never sends `phase(connecting)`. With the default
+  `VOICE_SPEECH=muted` it also never sends `phase(speaking)`, model audio or `say` frames.
 - `user` and `say` frames carry the whole text so far while `final` is false, and the whole text when it
   is true, so a client replaces rather than appends.
 - Faults (`runaway`, `loop`, NIM error, closed NIM socket, 10 s of NIM silence while a reply is owed)
@@ -171,19 +193,22 @@ names and numbers, never sentences; `detail` is an English fallback.
 | id | what it proves | facts | when it is not `ok` |
 | --- | --- | --- | --- |
 | `voice.gpu` | an NVIDIA GPU answers `nvidia-smi` | `name` | `unavailable`, and the report is `available: false` |
-| `voice.vram` | the card (not what is free) has 80 GB or more | `totalMB`, `needMB` (70000) | `unavailable` under 80000 MB, or when the size cannot be read |
+| `voice.vram` | the card (not what is free) has 64 GB or more | `totalMB`, `needMB` (62000) | `unavailable` under 64000 MB, or when the size cannot be read |
 | `voice.docker` | `docker version` works for this user | `os`, `problem` (`missing`, `denied`, `stopped`) | `blocked`, fix is a `command` chosen by OS (Arch, Debian and Ubuntu, anything else a pointer line) with the reason it needs privileges |
 | `voice.cdi` | a `nvidia.com/gpu=` CDI device exists (`nvidia-ctk cdi list`, or a spec file in `/etc/cdi` or `/var/run/cdi`) | `toolkit` (`installed`, `missing`) | `blocked`, fix is `sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml` |
 | `voice.model` | `config.pbtxt` and the `nemotron-voicechat/1` weights are there and at least 99% of 46868000000 bytes | `bytes`, `needBytes`, and while a job is open `job`, `progress`; after a failed one `lastFailure`, `lastJob` | `todo` with the job `voice.downloadModel` (bytes still to fetch, minutes), `working` while it runs |
 | `voice.image` | `docker image inspect` finds the image | `bytes`, `needBytes`, as above | `todo` with the job `voice.pullImage` (22500000000 bytes), `working` while it runs; waits (`after: voice.docker`, no fix) while docker is not usable |
-| `voice.engine` | see below | `mode`, `state`, `freeMB`, `needMB`, `holders`, `progress`, `reason` | see below |
+| `voice.engine` | see below | `mode`, `state`, `freeMB`, `needMB`, `holders`, `progress`, `reason`, and after a failed start `failure`, `tail` | see below |
 | `voice.gateway` | always `ok` | `version` | |
 
-`voice.engine`: `ok` when it is running and healthy, and also `ok` when it is stopped and the GPU has 70000 MB
+`voice.engine`: `ok` when it is running and healthy, and also `ok` when it is stopped and the GPU has 62000 MB
 free (the state means "starts on demand"); `working` while it loads, with `progress`; `blocked` when it is
-stopped but the free memory is under 70000 MB (facts `freeMB`, `needMB` and `holders`, the programs holding
+stopped but the free memory is under 62000 MB (facts `freeMB`, `needMB` and `holders`, the programs holding
 the GPU, largest first) or when it is down (`reason`); `todo` with `after` naming the step above it while
 something is missing. There is never a fix for a busy GPU: the gateway does not stop anyone else's job.
+A start that failed is down with `failure` (`gpuMemory`, `exited`, `notReady` or `startFailed`), the facts that
+go with it (`freeMB` and `needMB` for `gpuMemory`) and `tail`, the last 10 lines of the container's log, for
+2 minutes.
 
 `ready` is true when every check is `ok`. The open job (if any) is on the report as `job` and on its check as
 `working`. When an external engine answers, the local steps (docker, CDI, model, image) are reported `ok` with
@@ -238,25 +263,33 @@ external, since only that port is the one the container publishes. If you run th
 A managed engine is started with exactly:
 
 ```
-docker run -d --rm --name nemotron-labs-voicechat --device nvidia.com/gpu=0 --shm-size=8GB \
-  -e NIM_HTTP_API_PORT=9000 -p 127.0.0.1:9000:9000 -v <model dir>:/data/models \
+docker run -d --name nemotron-labs-voicechat --device nvidia.com/gpu=0 --shm-size=8GB \
+  -e NIM_HTTP_API_PORT=9000 -e LLM_GPU_MEM_UTIL=0.30 -e TTS_GPU_MEM_UTIL=0.25 \
+  -p 127.0.0.1:9000:9000 -v <model dir>:/data/models \
   --entrypoint /s2s/run_s2s_server.sh nvcr.io/nim/nvidia/nemotron-labs-voicechat:latest
 ```
 
-(CDI device form, because this Docker has no `nvidia` runtime.) `<model dir>` is `VOICE_MODEL_DIR`, or the
+(CDI device form, because this Docker has no `nvidia` runtime. No `--rm`: a container that dies while loading
+keeps its log until the gateway has read it, see below.) The two `-e` values are `VOICE_LLM_MEM_UTIL` and
+`VOICE_TTS_MEM_UTIL`, each validated to 0.1 to 0.6 (anything else falls back to the default). `<model dir>` is `VOICE_MODEL_DIR`, or the
 `nemotron-labs-voicechat_v1.0.0` folder inside it where NGC unpacks the download.
 
 - A start happens only for a call, and only if the GPU's free memory, read again right before, is at least
-  70000 MB. Otherwise nothing starts, `/health` says `busy` naming who holds the GPU, and the call gets
+  62000 MB. Otherwise nothing starts, `/health` says `busy` naming who holds the GPU, and the call gets
   `engine(busy)` and `error(engineDown)`. Missing pieces give `engine(needsSetup)` and the same error.
 - While the engine loads, the call's socket stays open and the gateway sends `engine(loading, progress)` every 2
   seconds, then continues with `ready` exactly as for a running engine. The NIM reports no percentage, so
   `progress` is the time spent against a typical 4 minute load (never above 0.99 before it is ready): a picture,
   not a measurement. A load that is not ready after 8 minutes stops the container and sends
   `error(engineDown)` with the reason, as does a refused `docker run` or a container that dies.
+- When the container exits while loading, the gateway runs `docker logs --tail 60` on it **before** removing it,
+  puts the last 10 lines in the failure's `tail` fact and all 60 in its own log, and then runs `docker rm -f`.
+  vLLM's "less than desired GPU memory utilization" is recognised as the failure `gpuMemory`, with `freeMB`
+  and `needMB` taken from the message (the engine that refused, not the sum of both).
 - After `VOICE_IDLE_STOP_MINUTES` with no call and no setup job, `docker stop nemotron-labs-voicechat` returns the
-  GPU to whatever else the machine does. The gateway touches no other container, ever: it matches the name
-  exactly, and a stale container of ours in a stopped state is removed with `docker rm -f` by that name.
+  GPU to whatever else the machine does, and `docker rm -f` removes it. The gateway touches no other
+  container, ever: it matches the name exactly, and a stale container of ours in a stopped state is removed
+  with `docker rm -f` by that name before a new start.
 - Restarting the gateway leaves a running engine alone. A client that leaves while the engine loads does not
   stop the load.
 
@@ -268,6 +301,44 @@ partial download by itself when run again (the gateway simply runs it again on t
 exact text of its authentication errors (used to tell `denied` from `network`), and `docker pull` output
 under the containerd image store (used for layer counting; without layer lines the job still runs, with no
 fraction). A card whose `nvidia-smi` reports no memory size (unified memory) is reported unavailable.
+
+## Memory: the NIM's two engines
+
+The NIM runs two vLLM engines in one container, a language engine and a speech (TTS) engine, and each reserves
+a share of the whole card when it starts: NVIDIA's defaults are `LLM_GPU_MEM_UTIL=0.45` and
+`TTS_GPU_MEM_UTIL=0.40`, so 85% of the card. Both are plain environment variables the container reads.
+
+On the RTX PRO 6000 (95.05 GiB) with a desktop already holding about 12 GB, that failed at start: "Free memory
+on device (34.67/95.05 GiB) is less than desired GPU memory utilization (0.4, 38.02 GiB)". With
+`LLM_GPU_MEM_UTIL=0.30` and `TTS_GPU_MEM_UTIL=0.25` the NIM loaded in about 5 minutes and the whole container
+used about 58 GB. So the gateway defaults to those lower shares, which is also why the numbers it checks are
+lower than they once were: a card must have 64 GB (`voice.vram` is `unavailable` below 64000 MB) and 62000 MB
+must be free to start (the measured 58 GB plus a margin). A machine whose other jobs leave more room can raise
+the shares with `VOICE_LLM_MEM_UTIL` and `VOICE_TTS_MEM_UTIL` (0.1 to 0.6). Lower shares than the measured
+pair have not been tried.
+
+## Gate results 2026-10-16
+
+First run against the real NIM on the RTX PRO 6000 (files in `voice/gate-results/`), five scripted task
+utterances with `voice-probe` and an end-to-end call through the gateway:
+
+| measure | result |
+| --- | --- |
+| first model audio after the end of speech | p50 157 ms, p95 239 ms (5 of 5 answered) |
+| `send_to_agent` calls | 0 of 5 with the shipped prompt; about 1 of 5 at best with heavily tuned prompts |
+| model errors, runaways, recycles | none |
+| NIM start on the 96 GB card | failed with NVIDIA's default memory shares, loaded in about 5 min with 0.30 and 0.25, container 58 GB |
+
+The live user transcript streams as the person talks and is mostly right. Errors are the kind a coding agent
+survives: "cache" heard as "cash", "build" as "bill", "add a dark mode" as "a dark mode". The model ignores
+instructions to be silent or to answer in one word and improvises assistant chatter ("I can run those tests for
+you. Just let me know what specific tests you would like me to run."), so prompts cannot fix the tool calls or
+the speech. Hence the decision that the model is an ear only: `VOICE_SPEECH=muted` and
+`VOICE_DISPATCH=transcripts` are the defaults. To re-run the gate against a new prompt or model:
+
+```
+voice-probe run --wav u1.wav --wav u2.wav --instructions prompt.txt --no-tools --summary-table
+```
 
 ## Packaging
 
@@ -284,8 +355,16 @@ tools and recycle policy as the gateway.
 ```
 voice-probe run --nim ws://127.0.0.1:9000/v1/realtime --wav a.wav --wav b.wav \
     [--gap-ms 1500] [--settle-ms 4000] \
-    [--barge-in-ms 300 --interrupt-wav x.wav] [--soak-seconds 600] [--json out.json]
+    [--barge-in-ms 300 --interrupt-wav x.wav] [--soak-seconds 600] [--json out.json] \
+    [--instructions prompt.txt] [--no-tools | --tools-json tools.json] [--summary-table]
 ```
+
+`--instructions FILE` replaces the persona text sent with `session.update` (the default is the speaking persona
+of `VOICE_SPEECH=model`). `--no-tools` registers no tools, as the gateway does when muted; `--tools-json FILE`
+registers the tools in the file instead, a JSON array of the NIM's own tool objects
+(`{"type":"function","name":...,"description":...,"ack_messages":[...],"parameters":{...}}`). `--summary-table`
+prints one plain row per utterance (first audio, tools, runaway, what was heard, what the model said) and the
+totals instead of the long summary, so two runs can be put side by side. The JSON is unaffected.
 
 WAVs must be 24 kHz mono 16-bit PCM (`ffmpeg -i in.wav -ar 24000 -ac 1 -c:a pcm_s16le out.wav`). Audio is
 streamed in 80 ms chunks at real-time pace, followed by `--gap-ms` of silence. Per utterance it records the
