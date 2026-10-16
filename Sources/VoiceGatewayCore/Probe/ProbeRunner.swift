@@ -9,6 +9,9 @@ public struct ProbeOptions: Sendable {
     public var bargeInMs: Int?
     public var interruptWav: WavFile?
     public var soakSeconds: Int?
+    public var instructions = VoiceTools.systemPrompt
+    public var tools = VoiceTools.all
+    public var summaryTable = false
 
     public init(nimURL: String, wavs: [WavFile]) {
         self.nimURL = nimURL
@@ -62,7 +65,8 @@ public actor ProbeRunner {
         let session: NIMSession
         do {
             session = try await NIMSession.open(
-                connector: connector, url: options.nimURL, timeout: limits.nimConnectTimeoutSeconds)
+                connector: connector, url: options.nimURL, timeout: limits.nimConnectTimeoutSeconds,
+                instructions: options.instructions, tools: options.tools)
         } catch {
             throw ProbeError.connect("\(error)")
         }
@@ -155,7 +159,8 @@ public actor ProbeRunner {
         await session.close()
         do {
             session = try await NIMSession.open(
-                connector: connector, url: options.nimURL, timeout: limits.nimConnectTimeoutSeconds)
+                connector: connector, url: options.nimURL, timeout: limits.nimConnectTimeoutSeconds,
+                instructions: options.instructions, tools: options.tools)
         } catch {
             throw ProbeError.connect("recycle failed: \(error)")
         }

@@ -8,10 +8,16 @@ public enum ProbeCLI {
         usage:
           voice-probe run [--nim URL] --wav a.wav [--wav b.wav ...] [--gap-ms 1500] [--settle-ms 4000]
                           [--barge-in-ms N --interrupt-wav x.wav] [--soak-seconds N] [--json out.json]
+                          [--instructions FILE] [--no-tools | --tools-json FILE] [--summary-table]
           voice-probe fake-nim [--port 9100]
 
         WAV files must be 24 kHz mono 16-bit PCM. --nim defaults to $VOICE_NIM_URL, then
         ws://127.0.0.1:9000/v1/realtime.
+
+        --instructions replaces the persona text sent with session.update (default: the speaking persona).
+        --no-tools registers no tools; --tools-json reads a JSON array of tool objects in the NIM's own shape
+        ({"type":"function","name":...,"description":...,"ack_messages":[...],"parameters":{...}}).
+        --summary-table prints one plain row per utterance and the totals instead of the long summary.
         """
 
     public static func main(_ arguments: [String]) async -> Int32 {
@@ -29,11 +35,17 @@ public enum ProbeCLI {
 
     struct Parsed {
         var values: [String: [String]] = [:]
+        var flags: Set<String> = []
 
-        init(_ arguments: [String], allowed: Set<String>) throws {
+        init(_ arguments: [String], allowed: Set<String>, flags allowedFlags: Set<String> = []) throws {
             var index = 0
             while index < arguments.count {
                 let key = arguments[index]
+                if allowedFlags.contains(key) {
+                    flags.insert(key)
+                    index += 1
+                    continue
+                }
                 guard allowed.contains(key), index + 1 < arguments.count else {
                     throw UsageError(message: "unknown or incomplete option \(key)\n\n\(ProbeCLI.usage)")
                 }
@@ -58,7 +70,11 @@ public enum ProbeCLI {
     static func options(_ arguments: [String]) throws -> (ProbeOptions, String?) {
         let parsed = try Parsed(
             arguments,
-            allowed: ["--nim", "--wav", "--gap-ms", "--settle-ms", "--barge-in-ms", "--interrupt-wav", "--soak-seconds", "--json"])
+            allowed: [
+                "--nim", "--wav", "--gap-ms", "--settle-ms", "--barge-in-ms", "--interrupt-wav", "--soak-seconds", "--json",
+                "--instructions", "--tools-json",
+            ],
+            flags: ["--no-tools", "--summary-table"])
         let paths = parsed.values["--wav"] ?? []
         guard !paths.isEmpty else { throw UsageError(message: "at least one --wav is needed\n\n\(usage)") }
         let url = parsed.one("--nim") ?? ProcessInfo.processInfo.environment["VOICE_NIM_URL"] ?? GatewayConfig.defaultNIMURL
@@ -71,13 +87,36 @@ public enum ProbeCLI {
         guard (options.bargeInMs == nil) == (options.interruptWav == nil) else {
             throw UsageError(message: "--barge-in-ms and --interrupt-wav go together")
         }
+        try applyPrompt(parsed, to: &options)
+        options.summaryTable = parsed.flags.contains("--summary-table")
         return (options, parsed.one("--json"))
+    }
+
+    private static func applyPrompt(_ parsed: Parsed, to options: inout ProbeOptions) throws {
+        if let path = parsed.one("--instructions") {
+            guard let text = try? String(contentsOfFile: path, encoding: .utf8) else {
+                throw UsageError(message: "cannot read the instructions file \(path)")
+            }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { throw UsageError(message: "the instructions file \(path) is empty") }
+            options.instructions = trimmed
+        }
+        let noTools = parsed.flags.contains("--no-tools")
+        let toolsPath = parsed.one("--tools-json")
+        guard !(noTools && toolsPath != nil) else { throw UsageError(message: "--no-tools and --tools-json exclude each other") }
+        if noTools { options.tools = [] }
+        if let toolsPath {
+            guard let text = try? String(contentsOfFile: toolsPath, encoding: .utf8) else {
+                throw UsageError(message: "cannot read the tools file \(toolsPath)")
+            }
+            options.tools = try ProbeTools.parse(text)
+        }
     }
 
     private static func run(_ arguments: [String]) async throws -> Int32 {
         let (options, jsonPath) = try options(arguments)
         let report = try await ProbeRunner.run(options: options)
-        print(report.humanSummary())
+        print(options.summaryTable ? report.summaryTable() : report.humanSummary())
         if let jsonPath {
             try Data(report.pretty().utf8).write(to: URL(fileURLWithPath: jsonPath))
             print("wrote \(jsonPath)")

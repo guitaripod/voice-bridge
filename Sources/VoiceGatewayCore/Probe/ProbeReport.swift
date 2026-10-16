@@ -93,6 +93,41 @@ public struct ProbeReport: Sendable {
         return lines.joined(separator: "\n")
     }
 
+    /// One plain row per utterance and the totals, for putting two runs side by side.
+    public func summaryTable() -> String {
+        func clip(_ text: String, _ limit: Int) -> String {
+            let one = text.split(whereSeparator: \.isNewline).joined(separator: " ")
+            return one.count > limit ? String(one.prefix(limit - 1)) + "~" : one
+        }
+        func pad(_ text: String, _ width: Int) -> String {
+            text.count >= width ? text : text + String(repeating: " ", count: width - text.count)
+        }
+        let rows = spoken.map { item -> [String] in
+            let first = item.firstAudioMs.map { String(format: "%.0f ms", $0) } ?? "-"
+            let tools = item.toolCalls.map(\.name).joined(separator: ",")
+            return [
+                "\(item.mark.index)", item.mark.wav, first, tools.isEmpty ? "-" : tools, item.runaway ? "yes" : "no",
+                clip(item.userTranscript, 44), clip(item.modelTranscript, 44),
+            ]
+        }
+        let header = ["#", "wav", "first audio", "tools", "runaway", "heard", "said"]
+        let table = [header] + rows
+        let widths = header.indices.map { column in table.map { $0[column].count }.max() ?? 0 }
+        var lines = table.map { row in
+            row.indices.map { pad(row[$0], widths[$0]) }.joined(separator: "  ").trimmingCharacters(in: .whitespaces)
+        }
+        let latencies = spoken.compactMap(\.firstAudioMs)
+        func ms(_ value: Double?) -> String { value.map { String(format: "%.0f ms", $0) } ?? "n/a" }
+        let sends = spoken.filter { $0.toolCalls.contains { $0.name == VoiceTools.sendToAgent } }.count
+        lines.append("")
+        lines.append(
+            "utterances \(spoken.count), answered \(latencies.count), first audio p50 \(ms(ProbeAnalysis.percentile(latencies, 0.5)))"
+                + " p95 \(ms(ProbeAnalysis.percentile(latencies, 0.95))), send_to_agent \(sends)/\(spoken.count),"
+                + " runaways \(results.filter(\.runaway).count), model errors \(results.reduce(0) { $0 + $1.errors.count }),"
+                + " recycles \(recycles.count)")
+        return lines.joined(separator: "\n")
+    }
+
     private func utterance(_ item: UtteranceResult) -> JSONValue {
         .object([
             "index": number(item.mark.index),
