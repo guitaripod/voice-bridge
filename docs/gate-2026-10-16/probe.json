@@ -1,0 +1,148 @@
+{
+  "bargeIn" : null,
+  "durationSeconds" : 33.441984625,
+  "nim" : "ws://127.0.0.1:9000/v1/realtime",
+  "options" : {
+    "gapMs" : 2500,
+    "settleMs" : 4000,
+    "soakSeconds" : null
+  },
+  "recycles" : [
+
+  ],
+  "schema" : "voice-probe/1",
+  "startedAt" : "2026-10-16T16:22:27Z",
+  "summary" : {
+    "answered" : 5,
+    "firstAudioP50Ms" : 156.74932199999958,
+    "firstAudioP95Ms" : 238.8134120000007,
+    "modelErrors" : 0,
+    "recycles" : 0,
+    "runaways" : 0,
+    "sendToAgentCalls" : 0,
+    "sendToAgentRate" : 0,
+    "utterances" : 5
+  },
+  "utterances" : [
+    {
+      "audioMs" : 5120,
+      "errors" : [
+
+      ],
+      "firstAudioMs" : 2.8484720000001573,
+      "index" : 0,
+      "kind" : "utterance",
+      "modelTranscript" : "",
+      "pass" : 0,
+      "runaway" : {
+        "any" : false,
+        "overlong" : false,
+        "tailAfterDone" : false
+      },
+      "speechMs" : 3040.1379669999997,
+      "speechStoppedMs" : 316.58438500000005,
+      "startMs" : 0.012290000000001605,
+      "toolCalls" : [
+
+      ],
+      "userTranscript" : "please run the tests and tell me what fails",
+      "wav" : "u1.wav"
+    },
+    {
+      "audioMs" : 6720,
+      "errors" : [
+
+      ],
+      "firstAudioMs" : 236.93128599999903,
+      "index" : 1,
+      "kind" : "utterance",
+      "modelTranscript" : "I can run those tests for you. Just let me know what specific tests you would like me to run.",
+      "pass" : 0,
+      "runaway" : {
+        "any" : false,
+        "overlong" : false,
+        "tailAfterDone" : false
+      },
+      "speechMs" : 4240.096696000001,
+      "speechStoppedMs" : 396.4712679999991,
+      "startMs" : 5600.375034,
+      "toolCalls" : [
+
+      ],
+      "userTranscript" : "refactor the parser to use the new cash and keep the public Api",
+      "wav" : "u2.wav"
+    },
+    {
+      "audioMs" : 5440,
+      "errors" : [
+
+      ],
+      "firstAudioMs" : 238.8134120000007,
+      "index" : 2,
+      "kind" : "utterance",
+      "modelTranscript" : " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make sure everything still works.",
+      "pass" : 0,
+      "runaway" : {
+        "any" : false,
+        "overlong" : false,
+        "tailAfterDone" : false
+      },
+      "speechMs" : 2960.09134,
+      "speechStoppedMs" : 400.7243450000004,
+      "startMs" : 12400.64343,
+      "toolCalls" : [
+
+      ],
+      "userTranscript" : "fix the crash when the settings file is missing",
+      "wav" : "u3.wav"
+    },
+    {
+      "audioMs" : 5440,
+      "errors" : [
+
+      ],
+      "firstAudioMs" : 156.74932199999958,
+      "index" : 3,
+      "kind" : "utterance",
+      "modelTranscript" : " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to run to make sure everything still works.",
+      "pass" : 0,
+      "runaway" : {
+        "any" : false,
+        "overlong" : false,
+        "tailAfterDone" : false
+      },
+      "speechMs" : 2880.104806000002,
+      "speechStoppedMs" : 319.50810500000057,
+      "startMs" : 17920.878222,
+      "toolCalls" : [
+
+      ],
+      "userTranscript" : "a dark mode toggle to the settings screen",
+      "wav" : "u4.wav"
+    },
+    {
+      "audioMs" : 9760,
+      "errors" : [
+
+      ],
+      "firstAudioMs" : 70.34620799999658,
+      "index" : 4,
+      "kind" : "utterance",
+      "modelTranscript" : " I can add a dark mode toggle to the settings screen. Just let me know which tests you would like me to run to make sure everything still works.",
+      "pass" : 0,
+      "runaway" : {
+        "any" : false,
+        "overlong" : false,
+        "tailAfterDone" : false
+      },
+      "speechMs" : 3520.1365880000035,
+      "speechStoppedMs" : 406.69087799999915,
+      "startMs" : 23361.081392,
+      "toolCalls" : [
+
+      ],
+      "userTranscript" : "open the latest bill log and summarize the first error",
+      "wav" : "u5.wav"
+    }
+  ]
+}

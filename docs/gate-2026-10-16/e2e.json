@@ -1,0 +1,624 @@
+{
+ "mode": "talk",
+ "events": [
+  {
+   "t": 0.043,
+   "kind": "ready",
+   "gateway": "0.2.0",
+   "model": "NemotronLabs VoiceChat 11B",
+   "v": 1
+  },
+  {
+   "t": 0.043,
+   "kind": "phase",
+   "at": 1792167845.5270433,
+   "phase": "listening"
+  },
+  {
+   "t": 0.513,
+   "kind": "speaking",
+   "file": "/tmp/claude-1000/-home-marcus-agentapi-workdir/7de50e63-21f0-4585-80c2-6eb7497d4011/scratchpad/gate/out/u1.wav",
+   "seconds": 2.99
+  },
+  {
+   "t": 0.903,
+   "kind": "phase",
+   "at": 1792167846.3873134,
+   "phase": "speaking"
+  },
+  {
+   "t": 1.393,
+   "kind": "say",
+   "final": true,
+   "text": ""
+  },
+  {
+   "t": 1.719,
+   "kind": "phase",
+   "at": 1792167847.2030683,
+   "phase": "hearing"
+  },
+  {
+   "t": 1.719,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the"
+  },
+  {
+   "t": 1.872,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the test"
+  },
+  {
+   "t": 2.034,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests"
+  },
+  {
+   "t": 2.356,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and"
+  },
+  {
+   "t": 2.682,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and tell me"
+  },
+  {
+   "t": 3.002,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and tell me what"
+  },
+  {
+   "t": 3.329,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and tell me what fail"
+  },
+  {
+   "t": 3.481,
+   "kind": "user",
+   "final": false,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and tell me what fails"
+  },
+  {
+   "t": 3.805,
+   "kind": "user",
+   "final": true,
+   "id": "c526a24c-80de-4cd0-9ae3-acc0c3b64a03",
+   "text": "please run the tests and tell me what fails"
+  },
+  {
+   "t": 3.805,
+   "kind": "phase",
+   "at": 1792167849.2896206,
+   "phase": "listening"
+  },
+  {
+   "t": 3.805,
+   "kind": "first_audio",
+   "after_ms": 239
+  },
+  {
+   "t": 3.805,
+   "kind": "phase",
+   "at": 1792167849.2896347,
+   "phase": "speaking"
+  },
+  {
+   "t": 3.967,
+   "kind": "say",
+   "final": false,
+   "text": "I can"
+  },
+  {
+   "t": 4.208,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those"
+  },
+  {
+   "t": 4.288,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for"
+  },
+  {
+   "t": 4.45,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you."
+  },
+  {
+   "t": 4.612,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let"
+  },
+  {
+   "t": 4.852,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know"
+  },
+  {
+   "t": 4.932,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know what specific"
+  },
+  {
+   "t": 5.092,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know what specific tests you"
+  },
+  {
+   "t": 5.254,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know what specific tests you would like"
+  },
+  {
+   "t": 5.416,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know what specific tests you would like me to"
+  },
+  {
+   "t": 5.661,
+   "kind": "say",
+   "final": false,
+   "text": "I can run those tests for you. Just let me know what specific tests you would like me to run."
+  },
+  {
+   "t": 11.609,
+   "kind": "speaking",
+   "file": "/tmp/claude-1000/-home-marcus-agentapi-workdir/7de50e63-21f0-4585-80c2-6eb7497d4011/scratchpad/gate/out/u2.wav",
+   "seconds": 4.2
+  },
+  {
+   "t": 12.564,
+   "kind": "say",
+   "final": true,
+   "text": "I can run those tests for you. Just let me know what specific tests you would like me to run."
+  },
+  {
+   "t": 12.649,
+   "kind": "phase",
+   "at": 1792167858.133339,
+   "phase": "hearing"
+  },
+  {
+   "t": 12.649,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the"
+  },
+  {
+   "t": 12.972,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the pars"
+  },
+  {
+   "t": 13.216,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser"
+  },
+  {
+   "t": 13.298,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to"
+  },
+  {
+   "t": 13.453,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the"
+  },
+  {
+   "t": 13.771,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new"
+  },
+  {
+   "t": 14.021,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cach"
+  },
+  {
+   "t": 14.104,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache"
+  },
+  {
+   "t": 14.256,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and"
+  },
+  {
+   "t": 14.659,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep"
+  },
+  {
+   "t": 14.74,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep the"
+  },
+  {
+   "t": 15.065,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep the public"
+  },
+  {
+   "t": 15.552,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep the public Ap"
+  },
+  {
+   "t": 15.706,
+   "kind": "user",
+   "final": false,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep the public Api"
+  },
+  {
+   "t": 16.108,
+   "kind": "user",
+   "final": true,
+   "id": "c6839ced-325b-48f3-86a8-3a2bfbee929d",
+   "text": "refactor the parser to use the new cache and keep the public Api"
+  },
+  {
+   "t": 16.108,
+   "kind": "phase",
+   "at": 1792167861.592727,
+   "phase": "listening"
+  },
+  {
+   "t": 16.109,
+   "kind": "first_audio",
+   "after_ms": 237
+  },
+  {
+   "t": 16.109,
+   "kind": "phase",
+   "at": 1792167861.5928311,
+   "phase": "speaking"
+  },
+  {
+   "t": 16.27,
+   "kind": "say",
+   "final": false,
+   "text": " I can"
+  },
+  {
+   "t": 16.429,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor"
+  },
+  {
+   "t": 16.592,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser"
+  },
+  {
+   "t": 16.753,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use"
+  },
+  {
+   "t": 16.918,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new"
+  },
+  {
+   "t": 17.079,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache."
+  },
+  {
+   "t": 17.239,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let"
+  },
+  {
+   "t": 17.398,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know"
+  },
+  {
+   "t": 17.559,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests"
+  },
+  {
+   "t": 17.721,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would"
+  },
+  {
+   "t": 17.884,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me"
+  },
+  {
+   "t": 18.048,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run"
+  },
+  {
+   "t": 18.201,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make"
+  },
+  {
+   "t": 18.365,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make sure everything"
+  },
+  {
+   "t": 18.527,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make sure everything is working"
+  },
+  {
+   "t": 18.688,
+   "kind": "say",
+   "final": false,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make sure everything is working."
+  },
+  {
+   "t": 23.915,
+   "kind": "speaking",
+   "file": "/tmp/claude-1000/-home-marcus-agentapi-workdir/7de50e63-21f0-4585-80c2-6eb7497d4011/scratchpad/gate/out/u3.wav",
+   "seconds": 2.95
+  },
+  {
+   "t": 24.797,
+   "kind": "say",
+   "final": true,
+   "text": " I can refactor the parser to use the new cache. Just let me know which tests you would like me to run to make sure everything is working."
+  },
+  {
+   "t": 25.123,
+   "kind": "phase",
+   "at": 1792167870.606763,
+   "phase": "hearing"
+  },
+  {
+   "t": 25.123,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash"
+  },
+  {
+   "t": 25.284,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when"
+  },
+  {
+   "t": 25.438,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the"
+  },
+  {
+   "t": 25.763,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the set"
+  },
+  {
+   "t": 25.927,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the settings"
+  },
+  {
+   "t": 26.242,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the settings file"
+  },
+  {
+   "t": 26.406,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the settings file is"
+  },
+  {
+   "t": 26.729,
+   "kind": "user",
+   "final": false,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the settings file is missing"
+  },
+  {
+   "t": 27.217,
+   "kind": "say",
+   "final": false,
+   "text": " I"
+  },
+  {
+   "t": 27.217,
+   "kind": "user",
+   "final": true,
+   "id": "a320e4f1-dd00-43d3-8290-ad0601069869",
+   "text": "fix the crash when the settings file is missing"
+  },
+  {
+   "t": 27.217,
+   "kind": "phase",
+   "at": 1792167872.7010098,
+   "phase": "listening"
+  },
+  {
+   "t": 27.217,
+   "kind": "first_audio",
+   "after_ms": 324
+  },
+  {
+   "t": 27.217,
+   "kind": "phase",
+   "at": 1792167872.701087,
+   "phase": "speaking"
+  },
+  {
+   "t": 27.37,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix"
+  },
+  {
+   "t": 27.532,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash"
+  },
+  {
+   "t": 27.692,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the"
+  },
+  {
+   "t": 27.856,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file"
+  },
+  {
+   "t": 28.017,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing"
+  },
+  {
+   "t": 28.17,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just"
+  },
+  {
+   "t": 28.331,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me"
+  },
+  {
+   "t": 28.49,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which"
+  },
+  {
+   "t": 28.653,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you"
+  },
+  {
+   "t": 28.818,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like"
+  },
+  {
+   "t": 28.979,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to"
+  },
+  {
+   "t": 29.139,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to run to"
+  },
+  {
+   "t": 29.302,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to run to make sure"
+  },
+  {
+   "t": 29.468,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to run to make sure everything is"
+  },
+  {
+   "t": 29.623,
+   "kind": "say",
+   "final": false,
+   "text": " I can fix that crash when the settings file is missing. Just let me know which tests you would like me to run to make sure everything is working."
+  }
+ ],
+ "binary_after_speech_ms": [
+  239,
+  237,
+  324
+ ],
+ "dispatches": []
+}
