@@ -21,6 +21,7 @@ let package = Package(
             name: "VoiceGatewayCore",
             dependencies: [
                 .product(name: "VoiceKit", package: "CodingAgentKit"),
+                .product(name: "SetupKit", package: "CodingAgentKit"),
                 .product(name: "Hummingbird", package: "hummingbird"),
                 .product(name: "HummingbirdWebSocket", package: "hummingbird-websocket"),
                 .product(name: "HummingbirdWSClient", package: "hummingbird-websocket"),
