@@ -298,15 +298,31 @@ check_space() {
     fail "only $(( free / 1024 )) MB free where the checkout lives; the build needs about 3 GB"
 }
 
+# Linux links the Swift runtime in, as the release build does. A dynamic build records the swiftly
+# directory of the toolchain that made it as its runpath, so the next toolchain upgrade deletes the
+# libraries under an installed program and its service restarts forever on a missing libswiftCore.
+swift_release() {
+  local flags=(-c release --build-system native)
+  [ "$(uname -s)" = "Linux" ] && flags+=(--static-swift-stdlib)
+  ( cd "$SRC/voice-bridge" && swift build "${flags[@]}" "$@" </dev/null )
+}
+
+# A program that cannot start is worse than none: the service restarts it forever and the app only
+# hears that voice is unavailable.
+require_starts() {
+  [ -x "$1" ] && [ -n "$(bounded 15 "$1" --version 2>/dev/null || true)" ] ||
+    fail "the program that was just built does not start on this machine"
+}
+
 build() {
   check_space
   say "building (this takes a few minutes the first time)"
-  if ! ( cd "$SRC/voice-bridge" && swift build -c release --build-system native </dev/null ) >>"$LOG" 2>&1; then
+  if ! swift_release >>"$LOG" 2>&1; then
     say "build failed; cleaning and trying once more"
     ( cd "$SRC/voice-bridge" && swift package clean </dev/null ) >>"$LOG" 2>&1 || true
-    ( cd "$SRC/voice-bridge" && swift build -c release --build-system native </dev/null ) >>"$LOG" 2>&1 ||
-      fail "$(build_reason)"
+    swift_release >>"$LOG" 2>&1 || fail "$(build_reason)"
   fi
+  require_starts "$PROGRAM"
 }
 
 # The value a name has in the env file, which is what the service will use whatever the environment
